@@ -1,2 +1,2 @@
 # recipe-database-cmd
-executable code built using github.com/sww1235/recipe-database-backend
+executable code built using http://github.com/sww1235/recipe-database-backend
