@@ -4,7 +4,7 @@
 
     -   ingredients
     -   quantity made
-    -   time neede to cook
+    -   time needed to cook
     -   steps in recipe w/ times
     -   cooking temperatures
 
