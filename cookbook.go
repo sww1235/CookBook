@@ -1,13 +1,21 @@
 package main
 
-import "flag"
+import (
+	"flag"
+	"fmt"
+	"os"
+	"path/filepath"
+
+	backend "github.com/sww1235/recipe-database-backend"
+)
 
 var configPath string
 var viewedRecipie string
 var addRecipeToggle bool
 var httpServer bool
 var ipConfig string
-var printHelp bool
+
+var recipes []backend.Recipe
 
 func main() {
 
@@ -21,13 +29,29 @@ func initCMD() {
 	flag.BoolVar(&addRecipeToggle, "n", false, "Add new recipe")
 	flag.BoolVar(&httpServer, "H", false, "Start HTTP server on localhost")
 	flag.StringVar(&ipConfig, "ip", "127.0.0.1", "IP to start HTTP server on")
-	flag.BoolVar(&printHelp, "h", false, "Print help")
 	flag.Parse()
 }
 
 //read config file, either from -c flag or default in ~/.config
 
 //read recipe files into memory
+func readRecipes(dirPath string) {
+	readRecipe := func(path string, f os.FileInfo, err error) error {
+		stat, err := os.Stat(path)
+		if err != nil {
+			return err
+		}
+		if stat.IsDir() {
+			fmt.Println("Is directory: ", path)
+		}
+		return nil
+	}
+	err := filepath.Walk(dirPath, readRecipe)
+	if err != nil {
+		fmt.Println("file does not exist")
+	}
+
+}
 
 //check for and read ingredient database
 
