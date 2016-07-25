@@ -9,8 +9,10 @@ package main
 //TODO: figure out logging
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/user"
 	"path"
@@ -29,9 +31,10 @@ var recipes []backend.Recipe
 
 func main() {
 	flag.Parse()
-	readConfig(path.Join(config.ConfigPath, "cookbook.cfg"))
 
 	readRecipes(config.RecipePath)
+
+	writeConfig(config, path.Join(config.ConfigPath, "cookbook.cfg"))
 }
 
 //read commandline options
@@ -40,24 +43,37 @@ func init() {
 	if usrErr != nil {
 		fmt.Println(usrErr)
 	}
+
+	//default paths. Will not be overridden
 	configDir := path.Join(currUsr.HomeDir, ".config", "cookbook")
 	recipeDir := path.Join(currUsr.HomeDir, "cookbook")
 
 	//fmt.Println(usr.HomeDir)
-	flag.StringVar(&config.ConfigPath, "c", configDir, "Path to config directory")
+
+	//Have to change in program
+	//flag.StringVar(&config.ConfigPath, "c", configDir, "Path to config directory")
+	config.ConfigPath = configDir
+	config.RecipePath = recipeDir
 	flag.StringVar(&viewedRecipe, "v", "", "Recipe to view")
-	flag.StringVar(&config.RecipePath, "r", recipeDir, "Directory to store recipes in")
+	//Have to change in program
+	//flag.StringVar(&config.RecipePath, "r", recipeDir, "Directory to store recipes in")
 	flag.BoolVar(&addRecipeToggle, "n", false, "Add new recipe")
 	flag.BoolVar(&httpServer, "H", false, "Start HTTP server on localhost")
 	flag.StringVar(&config.IPConfig, "ip", "127.0.0.1", "IP to start HTTP server on")
 	flag.Parse()
-	mkErr := os.MkdirAll(configDir, 740)
+
+	readConfig(path.Join(config.ConfigPath, "cookbook.cfg"))
+
+	mkErr := os.MkdirAll(config.ConfigPath, 0644)
+	mkErr2 := os.MkdirAll(config.RecipePath, 0644)
+
 	//fmt.Println(configDir)
-	if mkErr == nil {
-		//fmt.Println("directory created or already exists")
-	}
+
 	if mkErr != nil {
 		fmt.Println(mkErr)
+	}
+	if mkErr2 != nil {
+		fmt.Println(mkErr2)
 	}
 }
 
@@ -74,13 +90,38 @@ func readRecipes(dirPath string) {
 			//fmt.Println("Is directory: ", path)
 			return nil
 		}
-		fmt.Println("Is file: ", path)
+		bytes, err := ioutil.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		var recipe backend.Recipe
+
+		err2 := json.Unmarshal(bytes, &recipe)
+		if err2 != nil {
+			return err
+		}
+		recipe.FileName = path
+		recipes = append(recipes, recipe)
 		return nil
 
 	}
 	err := filepath.Walk(dirPath, readRecipe)
 	if err != nil {
-		fmt.Println("file does not exist")
+		fmt.Println("Error in ReadRecipes: ", err)
+	}
+}
+
+func saveRecipes(recipes []backend.Recipe) {
+	for _, recipe := range recipes {
+		tempPath := recipe.FileName
+		bytes, err := json.MarshalIndent(recipe, "", "  ")
+		if err != nil {
+			fmt.Println("Error in saveRecipes(making json): ", err)
+		}
+		ioutil.WriteFile(tempPath, bytes, 0644)
+		if err != nil {
+			fmt.Println("Error in saveRecipes(writing file): ", err)
+		}
 	}
 
 }
