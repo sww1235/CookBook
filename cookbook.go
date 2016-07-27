@@ -30,6 +30,8 @@ var config Configuration
 var recipes []backend.Recipe
 
 func main() {
+	initialization()
+
 	flag.Parse()
 
 	readRecipes(config.RecipePath)
@@ -38,11 +40,14 @@ func main() {
 }
 
 //read commandline options
-func init() {
+func initialization() {
 	currUsr, usrErr := user.Current()
 	if usrErr != nil {
 		fmt.Println(usrErr)
 	}
+
+	//TODO: attempt to read config file, if it does not exist or can't be read,
+	//then attempt to use flags, which then assign default values if not used.
 
 	//default paths. Will not be overridden
 	configDir := path.Join(currUsr.HomeDir, ".config", "cookbook")
@@ -132,6 +137,11 @@ func saveRecipes(recipes []backend.Recipe) {
 //or hecate for example programs
 
 //add new recipe function
+
+func addRecipe() backend.Recipe {
+
+	return backend.Recipe{}
+}
 
 //view recipe function
 
