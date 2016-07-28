@@ -20,20 +20,13 @@ import (
 	"path/filepath"
 
 	backend "github.com/sww1235/recipe-database-backend"
-  cfgHandler "github.com/sww1235/go-config-handler"
 )
 
 //Configuration stores the configuration that is read in and out from a file
-type Configuration struct {
-	ConfigPath string `json:"configpath"`
-	IPConfig   string
-	RecipePath string
-}
 
 var viewedRecipe string
 var addRecipeToggle bool
 var httpServer bool
-
 
 var config Configuration
 
@@ -42,11 +35,13 @@ var recipes []backend.Recipe
 var infoLogger = log.New(os.Stderr, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
 
 func main() {
-	initialization()
+	err := initialization()
+	if err != nil {
+		infoLogger.Panicln("Panic: Serious issue detected", err)
+	}
+	readRecipes(config.RecipeDir)
 
-	readRecipes(config.RecipePath)
-
-	cfgHandler.writeConfig(config, path.Join(config.ConfigPath, "cookbook.cfg"))
+	writeConfig(config, path.Join(config.ConfigPath, "cookbook.cfg"))
 }
 
 //initialization sets up command line options, logging and config stuffs
@@ -57,47 +52,61 @@ func initialization() error {
 		return usrErr
 	}
 
-	//TODO: attempt to read config file, if it does not exist or can't be read,
-	//then attempt to use flags, which then assign default values if not used.
+	//TODO: Set flags to use temp variables so they can override config file
 
 	//default paths. Will not be overridden
 	configDir := path.Join(currUsr.HomeDir, ".config", "cookbook")
 	recipeDir := path.Join(currUsr.HomeDir, "cookbook")
 
-	config.ConfigPath = configDir
-	config.RecipePath = recipeDir
+	config.ConfigPath = path.Join(configDir, "cookbook.cfg")
+	config.RecipeDir = recipeDir
 
-	//Have to change in program
-	//flag.StringVar(&config.ConfigPath, "c", configDir, "Path to config directory")
-
-	defaultFileConfig, defaultCfgErr := readConfig(path.Join(config.ConfigPath, "cookbook.cfg"))
+	defaultFileConfig, defaultCfgErr := readConfig(config.ConfigPath)
 
 	//when this block is triggered, the config file is not in its default location
 	if defaultCfgErr != nil {
-		infoLogger.Println("Config file not found in default location, trying")
+		infoLogger.Println("Config file not found in default location, trying commandline flag")
+		flag.StringVar(&config.ConfigPath, "c", config.ConfigPath, "Path to config file")
 		flag.StringVar(&viewedRecipe, "v", "", "Recipe to view")
-		//Have to change in program
-		//flag.StringVar(&config.RecipePath, "r", recipeDir, "Directory to store recipes in")
+		flag.StringVar(&config.RecipeDir, "r", recipeDir, "Directory to store recipes in")
 		flag.BoolVar(&addRecipeToggle, "n", false, "Add new recipe")
-		flag.BoolVar(&httpServer, "H", false, "Start HTTP server on localhost")
+		flag.BoolVar(&httpServer, "H", false, "Use HTTP server instead of terminal")
 		flag.StringVar(&config.IPConfig, "ip", "127.0.0.1", "IP to start HTTP server on")
 		flag.Parse()
 
-		readFileConfig, readCfgErr := readConfig(path.Join(config.ConfigPath, "cookbook.cfg"))
-    if readCfgErr
+		mkErr := os.MkdirAll(config.ConfigPath, 0644)
+		mkErr2 := os.MkdirAll(config.RecipeDir, 0644)
+
+		//MkdirAll returns nil on already exists or dir created, therefore errors are
+		//serious
+		if mkErr != nil {
+			return mkErr
+		}
+		if mkErr2 != nil {
+			return mkErr2
+		}
+
+		readFileConfig, readCfgErr := readConfig(config.ConfigPath)
+		if readCfgErr != nil {
+
+		}
 	}
 
 	mkErr := os.MkdirAll(config.ConfigPath, 0644)
-	mkErr2 := os.MkdirAll(config.RecipePath, 0644)
+	mkErr2 := os.MkdirAll(config.RecipeDir, 0644)
 
-	//fmt.Println(configDir)
-
+	//MkdirAll returns nil on already exists or dir created, therefore errors are
+	//serious
 	if mkErr != nil {
 		return mkErr
 	}
 	if mkErr2 != nil {
 		return mkErr2
 	}
+
+	config.ConfigPath = defaultFileConfig.ConfigPath
+	config.IPConfig = defaultFileConfig.IPConfig
+	config.RecipeDir = defaultFileConfig.RecipeDir
 	return nil
 }
 
@@ -131,7 +140,7 @@ func readRecipes(dirPath string) {
 	}
 	err := filepath.Walk(dirPath, readRecipe)
 	if err != nil {
-		fmt.Println("Error in ReadRecipes: ", err)
+		infoLogger.Fatal("FATAL: Could not walk directory", err)
 	}
 }
 

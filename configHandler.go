@@ -9,7 +9,7 @@ import (
 type Configuration struct {
 	ConfigPath string `json:"configpath"`
 	IPConfig   string
-	RecipePath string
+	RecipeDir  string
 }
 
 func readConfig(filename string) (Configuration, error) {
