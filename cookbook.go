@@ -13,37 +13,48 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/user"
 	"path"
 	"path/filepath"
 
 	backend "github.com/sww1235/recipe-database-backend"
+  cfgHandler "github.com/sww1235/go-config-handler"
 )
+
+//Configuration stores the configuration that is read in and out from a file
+type Configuration struct {
+	ConfigPath string `json:"configpath"`
+	IPConfig   string
+	RecipePath string
+}
 
 var viewedRecipe string
 var addRecipeToggle bool
 var httpServer bool
 
+
 var config Configuration
 
 var recipes []backend.Recipe
 
+var infoLogger = log.New(os.Stderr, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
+
 func main() {
 	initialization()
 
-	flag.Parse()
-
 	readRecipes(config.RecipePath)
 
-	writeConfig(config, path.Join(config.ConfigPath, "cookbook.cfg"))
+	cfgHandler.writeConfig(config, path.Join(config.ConfigPath, "cookbook.cfg"))
 }
 
-//read commandline options
-func initialization() {
+//initialization sets up command line options, logging and config stuffs
+func initialization() error {
+
 	currUsr, usrErr := user.Current()
 	if usrErr != nil {
-		fmt.Println(usrErr)
+		return usrErr
 	}
 
 	//TODO: attempt to read config file, if it does not exist or can't be read,
@@ -53,21 +64,28 @@ func initialization() {
 	configDir := path.Join(currUsr.HomeDir, ".config", "cookbook")
 	recipeDir := path.Join(currUsr.HomeDir, "cookbook")
 
-	//fmt.Println(usr.HomeDir)
+	config.ConfigPath = configDir
+	config.RecipePath = recipeDir
 
 	//Have to change in program
 	//flag.StringVar(&config.ConfigPath, "c", configDir, "Path to config directory")
-	config.ConfigPath = configDir
-	config.RecipePath = recipeDir
-	flag.StringVar(&viewedRecipe, "v", "", "Recipe to view")
-	//Have to change in program
-	//flag.StringVar(&config.RecipePath, "r", recipeDir, "Directory to store recipes in")
-	flag.BoolVar(&addRecipeToggle, "n", false, "Add new recipe")
-	flag.BoolVar(&httpServer, "H", false, "Start HTTP server on localhost")
-	flag.StringVar(&config.IPConfig, "ip", "127.0.0.1", "IP to start HTTP server on")
-	flag.Parse()
 
-	readConfig(path.Join(config.ConfigPath, "cookbook.cfg"))
+	defaultFileConfig, defaultCfgErr := readConfig(path.Join(config.ConfigPath, "cookbook.cfg"))
+
+	//when this block is triggered, the config file is not in its default location
+	if defaultCfgErr != nil {
+		infoLogger.Println("Config file not found in default location, trying")
+		flag.StringVar(&viewedRecipe, "v", "", "Recipe to view")
+		//Have to change in program
+		//flag.StringVar(&config.RecipePath, "r", recipeDir, "Directory to store recipes in")
+		flag.BoolVar(&addRecipeToggle, "n", false, "Add new recipe")
+		flag.BoolVar(&httpServer, "H", false, "Start HTTP server on localhost")
+		flag.StringVar(&config.IPConfig, "ip", "127.0.0.1", "IP to start HTTP server on")
+		flag.Parse()
+
+		readFileConfig, readCfgErr := readConfig(path.Join(config.ConfigPath, "cookbook.cfg"))
+    if readCfgErr
+	}
 
 	mkErr := os.MkdirAll(config.ConfigPath, 0644)
 	mkErr2 := os.MkdirAll(config.RecipePath, 0644)
@@ -75,11 +93,12 @@ func initialization() {
 	//fmt.Println(configDir)
 
 	if mkErr != nil {
-		fmt.Println(mkErr)
+		return mkErr
 	}
 	if mkErr2 != nil {
-		fmt.Println(mkErr2)
+		return mkErr2
 	}
+	return nil
 }
 
 //read config file, either from -c flag or default in ~/.config
