@@ -27,90 +27,153 @@ import (
 var viewedRecipe string
 var addRecipeToggle bool
 var httpServer bool
+var httpServerFlagIP string
 
 var config Configuration
 
 var recipes []backend.Recipe
 
 var infoLogger = log.New(os.Stderr, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
+var fatalLogger = log.New(os.Stderr, "FATAL: ", log.Ldate|log.Ltime|log.Lshortfile)
 
 func main() {
 	err := initialization()
 	if err != nil {
-		infoLogger.Panicln("Panic: Serious issue detected", err)
+		fatalLogger.Panicln("Serious issue detected", err)
 	}
 	readRecipes(config.RecipeDir)
 
-	writeConfig(config, path.Join(config.ConfigPath, "cookbook.cfg"))
+	writeConfig(config, path.Join(config.configPath, "cookbook.cfg"))
 }
 
 //initialization sets up command line options, logging and config stuffs
+//read config file, either from -c flag or default in ~/.config
 func initialization() error {
 
+	//if this fails, cannot create default recipeDir or configDir. This is fatal
 	currUsr, usrErr := user.Current()
 	if usrErr != nil {
 		return usrErr
 	}
+	useDefaltsIfError := func(err bool) {
+		config.IPConfig = "127.0.0.1"
+		config.RecipeDir = path.Join(currUsr.HomeDir, "cookbook")
+		config.configFileNotFound = false
+		if err {
+			config.configPath = ""
+			config.configFileNotFound = true
+		}
 
-	//TODO: Set flags to use temp variables so they can override config file
+	}
 
 	//default paths. Will not be overridden
 	configDir := path.Join(currUsr.HomeDir, ".config", "cookbook")
 	recipeDir := path.Join(currUsr.HomeDir, "cookbook")
 
-	config.ConfigPath = path.Join(configDir, "cookbook.cfg")
-	config.RecipeDir = recipeDir
+	//setting more defaults
+	defaultConfigPath := path.Join(configDir, "cookbook.cfg")
+	defaultRecipeDir := recipeDir
 
-	defaultFileConfig, defaultCfgErr := readConfig(config.ConfigPath)
+	//setting config to defaults
+	config.configPath = defaultConfigPath
+	config.RecipeDir = defaultRecipeDir
+
+	//Define and Parse commandline flags here
+	flagConfigPath := flag.String("c", defaultConfigPath, "Path to config file")
+	flagViewedRecipe := flag.String("v", "", "Recipe to view")
+	flagRecipeDir := flag.String("r", defaultRecipeDir, "Directory to store recipes in")
+	flagAddRecipeToggle := flag.Bool("n", false, "Add new recipe")
+	flagHTTPServer := flag.Bool("H", false, "Use HTTP server instead of terminal")
+	flagIPConfig := flag.String("ip", "127.0.0.1", "IP to start HTTP server on")
+	flag.Parse()
+
+	//Retrieve some values from flags and set global variables
+	//if these flags are not set, defaults will be set
+	viewedRecipe = *flagViewedRecipe
+	addRecipeToggle = *flagAddRecipeToggle
+	httpServer = *flagHTTPServer
+	httpServerFlagIP = *flagIPConfig
+
+	//Attempt to read config from default location
+	defaultConfig, defaultCfgErr := readConfig(config.configPath)
 
 	//when this block is triggered, the config file is not in its default location
-	if defaultCfgErr != nil {
-		infoLogger.Println("Config file not found in default location, trying commandline flag")
-		flag.StringVar(&config.ConfigPath, "c", config.ConfigPath, "Path to config file")
-		flag.StringVar(&viewedRecipe, "v", "", "Recipe to view")
-		flag.StringVar(&config.RecipeDir, "r", recipeDir, "Directory to store recipes in")
-		flag.BoolVar(&addRecipeToggle, "n", false, "Add new recipe")
-		flag.BoolVar(&httpServer, "H", false, "Use HTTP server instead of terminal")
-		flag.StringVar(&config.IPConfig, "ip", "127.0.0.1", "IP to start HTTP server on")
-		flag.Parse()
+	//Or the configPath flag is set
+	if *flagConfigPath != defaultConfigPath || defaultCfgErr != nil {
+		infoLogger.Println("Config file not found in default location or commandline flag is set, trying commandline flag")
 
-		mkErr := os.MkdirAll(config.ConfigPath, 0644)
-		mkErr2 := os.MkdirAll(config.RecipeDir, 0644)
+		//config flag is not set and config file does not exist in default location
+
+		if *flagConfigPath == defaultConfigPath {
+			//log that config dir is being kept as default due to no flag
+			infoLogger.Println("config flag not set, creating directories and config file in default location")
+		} else {
+			//set configdir to path entered by flag
+			infoLogger.Printf("config flag set, using %s as configPath", *flagConfigPath)
+			config.configPath = *flagConfigPath
+		}
+		//Attempt to create configdir in location defined above
+		mkErr := os.MkdirAll(filepath.Dir(config.configPath), 0644)
 
 		//MkdirAll returns nil on already exists or dir created, therefore errors are
-		//serious
+		//serious, IE directory could not be created due to permissions
 		if mkErr != nil {
+			infoLogger.Println("Something went wrong attempting to create config directory. Check permissions to specified config directory", mkErr)
+			infoLogger.Println("will not attempt to save config file as specified dir cannot be created")
+			useDefaltsIfError(true)
+		} else {
+			readConfig, readCfgErr := readConfig(config.configPath)
+			if readCfgErr != nil {
+				infoLogger.Println("Config file does not exist at either default or commandline flag location, using defaults", readCfgErr)
+				useDefaltsIfError(false)
+			} else {
+				config.IPConfig = readConfig.IPConfig
+				config.RecipeDir = readConfig.RecipeDir
+			}
+
+		}
+
+		//
+
+	} else {
+		config.IPConfig = defaultConfig.IPConfig
+		config.RecipeDir = defaultConfig.RecipeDir
+
+	}
+
+	//try flag recipeDir
+	if *flagRecipeDir != defaultRecipeDir {
+		infoLogger.Printf("trying to use recipeDir %s from flag", *flagRecipeDir)
+		//MkdirAll returns nil on already exists or dir created, therefore errors are
+		//serious
+		mkErr := os.MkdirAll(*flagRecipeDir, 0644)
+		//if error creating recipeDir, then attempt to use config set if not default
+		if mkErr != nil {
+			infoLogger.Printf("Unable to use %s as recipe directory, normally permissions or something out of my control", *flagRecipeDir)
+		}
+	} else if config.RecipeDir != defaultRecipeDir {
+		infoLogger.Printf("trying to use recipeDir %s from config", config.RecipeDir)
+		//MkdirAll returns nil on already exists or dir created, therefore errors are
+		//serious
+		mkErr := os.MkdirAll(config.RecipeDir, 0644)
+		//if error creating recipeDir, then attempt to use default
+		if mkErr != nil {
+			infoLogger.Printf("Unable to use %s as recipe directory, normally permissions or something out of my control", config.RecipeDir)
+		}
+	} else {
+		infoLogger.Printf("trying to use default recipeDir %s", defaultRecipeDir)
+		//MkdirAll returns nil on already exists or dir created, therefore errors are
+		//serious
+		mkErr := os.MkdirAll(defaultRecipeDir, 0644)
+		//if error creating recipeDir, then attempt to use default
+		if mkErr != nil {
+			infoLogger.Printf("Unable to use %s as recipe directory, normally permissions or something out of my control", defaultRecipeDir)
+			//return err for fatal processing in main
 			return mkErr
 		}
-		if mkErr2 != nil {
-			return mkErr2
-		}
-
-		readFileConfig, readCfgErr := readConfig(config.ConfigPath)
-		if readCfgErr != nil {
-
-		}
 	}
-
-	mkErr := os.MkdirAll(config.ConfigPath, 0644)
-	mkErr2 := os.MkdirAll(config.RecipeDir, 0644)
-
-	//MkdirAll returns nil on already exists or dir created, therefore errors are
-	//serious
-	if mkErr != nil {
-		return mkErr
-	}
-	if mkErr2 != nil {
-		return mkErr2
-	}
-
-	config.ConfigPath = defaultFileConfig.ConfigPath
-	config.IPConfig = defaultFileConfig.IPConfig
-	config.RecipeDir = defaultFileConfig.RecipeDir
 	return nil
 }
-
-//read config file, either from -c flag or default in ~/.config
 
 //read recipe files into memory
 func readRecipes(dirPath string) {
@@ -140,7 +203,7 @@ func readRecipes(dirPath string) {
 	}
 	err := filepath.Walk(dirPath, readRecipe)
 	if err != nil {
-		infoLogger.Fatal("FATAL: Could not walk directory", err)
+		fatalLogger.Fatal("Could not walk directory", err)
 	}
 }
 
