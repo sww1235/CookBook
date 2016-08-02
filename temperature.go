@@ -12,6 +12,10 @@ type temperature struct {
 	Unit  TempUnit
 }
 
+func (t temperature) String() string {
+	return fmt.Sprintf("%Gº %v", t.Value, t.Unit)
+}
+
 func (t temperature) Convert(dest rune) float64 {
 	switch dest {
 	case 'F':
