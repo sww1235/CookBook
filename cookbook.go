@@ -43,15 +43,28 @@ func main() {
 	if err != nil {
 		fatalLogger.Panicln("Serious issue detected", err)
 	}
+
+	readRecipes(config.RecipeDir)
+
 	if viewedRecipe != "" {
 		err := displaySingleRecipe(viewedRecipe)
 		if err != nil {
 			fatalLogger.Fatalf("%s not found in Recipes, check your spelling and capitilization", viewedRecipe)
 		}
 	}
-	readRecipes(config.RecipeDir)
-
+	if addRecipeToggle {
+		//add recipe needs to be fixed
+		recipes = append(recipes, addRecipe())
+		saveRecipes(recipes)
+		writeConfig(config, path.Join(config.configPath, "cookbook.cfg"))
+		os.Exit(0)
+	}
+	if httpServer {
+		startHTTPServer()
+	}
+	saveRecipes(recipes)
 	writeConfig(config, path.Join(config.configPath, "cookbook.cfg"))
+
 }
 
 //initialization sets up command line options, logging and config stuffs
@@ -237,6 +250,8 @@ func saveRecipes(recipes []backend.Recipe) {
 
 //add new recipe function
 
+//addRecipe is used for command line stuff. uses os.stdin to progressively retrieve information
+//returns a backend.recipe
 func addRecipe() backend.Recipe {
 
 	return backend.Recipe{}
