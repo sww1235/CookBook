@@ -9,7 +9,9 @@ package main
 //TODO: figure out logging
 
 import (
+	"bufio"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -40,6 +42,12 @@ func main() {
 	err := initialization()
 	if err != nil {
 		fatalLogger.Panicln("Serious issue detected", err)
+	}
+	if viewedRecipe != "" {
+		err := displaySingleRecipe(viewedRecipe)
+		if err != nil {
+			fatalLogger.Fatalf("%s not found in Recipes, check your spelling and capitilization", viewedRecipe)
+		}
 	}
 	readRecipes(config.RecipeDir)
 
@@ -80,7 +88,7 @@ func initialization() error {
 
 	//Define and Parse commandline flags here
 	flagConfigPath := flag.String("c", defaultConfigPath, "Path to config file")
-	flagViewedRecipe := flag.String("v", "", "Recipe to view")
+	flagViewedRecipe := flag.String("v", "", "Recipe to view. Recipe name is case sensitive and must be typed exactly. This flag is provided as a courtesy for scripting and people who can't run termbox")
 	flagRecipeDir := flag.String("r", defaultRecipeDir, "Directory to store recipes in")
 	flagAddRecipeToggle := flag.Bool("n", false, "Add new recipe")
 	flagHTTPServer := flag.Bool("H", false, "Use HTTP server instead of terminal")
@@ -212,11 +220,11 @@ func saveRecipes(recipes []backend.Recipe) {
 		tempPath := recipe.FileName
 		bytes, err := json.MarshalIndent(recipe, "", "  ")
 		if err != nil {
-			fmt.Println("Error in saveRecipes(making json): ", err)
+			infoLogger.Println("Error in saveRecipes(making json): ", err)
 		}
 		ioutil.WriteFile(tempPath, bytes, 0644)
 		if err != nil {
-			fmt.Println("Error in saveRecipes(writing file): ", err)
+			infoLogger.Println("Error in saveRecipes(writing file): ", err)
 		}
 	}
 
@@ -232,6 +240,26 @@ func saveRecipes(recipes []backend.Recipe) {
 func addRecipe() backend.Recipe {
 
 	return backend.Recipe{}
+}
+
+func displaySingleRecipe(recipeName string) error {
+	tempRecipe := backend.Recipe{}
+	for _, recipe := range recipes {
+		if recipe.Name == recipeName {
+			tempRecipe = recipe
+			break
+		}
+	}
+	if tempRecipe.Name == "" {
+		err := errors.New("Recipe not found")
+		return err
+	}
+	fmt.Print(tempRecipe.String())
+
+	fmt.Println("Press enter to exit program")
+	//will keep attempting to read from stdin until it receives a '\n'
+	bufio.NewReader(os.Stdin).ReadBytes('\n')
+	return nil
 }
 
 //view recipe function
