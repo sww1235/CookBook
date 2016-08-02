@@ -18,6 +18,11 @@ the wonderfly titled [50 shades of Go](http://devs.cloudimmunity.com/gotchas-and
 
 the [Go Book](https://www.golang-book.com)
 
+Gui developed using [Go CUI](https://github.com/jroimartin/gocui)
+
+With [hecate](https://github.com/evanmiller/hecate/blob/master/hecate.go) used
+as an example
+
 Of course, the [Golang documentation](https://golang.org/doc/) and the [package documentation](https://golang.org/pkg/)
 
 And various [stackoverflow](stackoverflow.com) answers of which there are
