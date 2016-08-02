@@ -51,19 +51,36 @@ func main() {
 		if err != nil {
 			fatalLogger.Fatalf("%s not found in Recipes, check your spelling and capitilization", viewedRecipe)
 		}
+		os.Exit(0)
 	}
 	if addRecipeToggle {
 		//add recipe needs to be fixed
 		recipes = append(recipes, addRecipe())
 		saveRecipes(recipes)
-		writeConfig(config, path.Join(config.configPath, "cookbook.cfg"))
+		// if config file found then write config
+		if !config.configFileNotFound {
+			writeConfig(config, config.configPath)
+		}
+
 		os.Exit(0)
 	}
 	if httpServer {
-		startHTTPServer()
+		err := startHTTPServer()
+		if err != nil {
+			fatalLogger.Fatalln("Something went wrong with the HTTP server", err)
+		}
+		saveRecipes(recipes)
+		// if config file found then write config
+		if !config.configFileNotFound {
+			writeConfig(config, config.configPath)
+		}
 	}
+
 	saveRecipes(recipes)
-	writeConfig(config, path.Join(config.configPath, "cookbook.cfg"))
+	// if config file found then write config
+	if !config.configFileNotFound {
+		writeConfig(config, config.configPath)
+	}
 
 }
 
