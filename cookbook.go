@@ -6,7 +6,7 @@ package main
 //conversions between a specific weight unit and a specific volume unit for a
 //specific ingredient
 
-//TODO: figure out logging
+// TODO: implement config settings for forground and background colors for cui
 
 import (
 	"bufio"
@@ -21,6 +21,7 @@ import (
 	"path"
 	"path/filepath"
 
+	"github.com/jroimartin/gocui"
 	backend "github.com/sww1235/recipe-database-backend"
 )
 
@@ -44,7 +45,8 @@ func main() {
 		fatalLogger.Panicln("Serious issue detected", err)
 	}
 
-	readRecipes(config.RecipeDir)
+	recipesRead := readRecipes(config.RecipeDir)
+	infoLogger.Println(recipesRead)
 
 	if viewedRecipe != "" {
 		err := displaySingleRecipe(viewedRecipe)
@@ -76,6 +78,12 @@ func main() {
 		}
 	}
 
+	if !httpServer && !addRecipeToggle {
+		err := startCUI()
+		if err != nil && err != gocui.ErrQuit {
+			fatalLogger.Fatalln("Something went wrong with the CUI", err)
+		}
+	}
 	saveRecipes(recipes)
 	// if config file found then write config
 	if !config.configFileNotFound {
@@ -214,7 +222,8 @@ func initialization() error {
 }
 
 //read recipe files into memory
-func readRecipes(dirPath string) {
+func readRecipes(dirPath string) int {
+	recipeCounter := 0
 	readRecipe := func(path string, f os.FileInfo, err error) error {
 		stat, err := os.Stat(path)
 		if err != nil {
@@ -236,6 +245,7 @@ func readRecipes(dirPath string) {
 		}
 		recipe.FileName = path
 		recipes = append(recipes, recipe)
+		recipeCounter++
 		return nil
 
 	}
@@ -243,6 +253,7 @@ func readRecipes(dirPath string) {
 	if err != nil {
 		fatalLogger.Fatal("Could not walk directory", err)
 	}
+	return recipeCounter
 }
 
 func saveRecipes(recipes []backend.Recipe) {
