@@ -46,7 +46,7 @@ func main() {
 	}
 
 	recipesRead := readRecipes(config.RecipeDir)
-	infoLogger.Println(recipesRead)
+	infoLogger.Println("Recipes Read:", recipesRead)
 
 	if viewedRecipe != "" {
 		err := displaySingleRecipe(viewedRecipe)
@@ -159,7 +159,7 @@ func initialization() error {
 			config.configPath = *flagConfigPath
 		}
 		//Attempt to create configdir in location defined above
-		mkErr := os.MkdirAll(filepath.Dir(config.configPath), 0644)
+		mkErr := os.MkdirAll(filepath.Dir(config.configPath), 0744)
 
 		//MkdirAll returns nil on already exists or dir created, therefore errors are
 		//serious, IE directory could not be created due to permissions
@@ -170,7 +170,7 @@ func initialization() error {
 		} else {
 			readConfig, readCfgErr := readConfig(config.configPath)
 			if readCfgErr != nil {
-				infoLogger.Println("Config file does not exist at either default or commandline flag location, using defaults", readCfgErr)
+				infoLogger.Println("Config file does not exist at either default or commandline flag location, using defaults.\n", "Error Reported:", readCfgErr)
 				useDefaltsIfError(false)
 			} else {
 				config.IPConfig = readConfig.IPConfig
@@ -192,7 +192,7 @@ func initialization() error {
 		infoLogger.Printf("trying to use recipeDir %s from flag", *flagRecipeDir)
 		//MkdirAll returns nil on already exists or dir created, therefore errors are
 		//serious
-		mkErr := os.MkdirAll(*flagRecipeDir, 0644)
+		mkErr := os.MkdirAll(*flagRecipeDir, 0744)
 		//if error creating recipeDir, then attempt to use config set if not default
 		if mkErr != nil {
 			infoLogger.Printf("Unable to use %s as recipe directory, normally permissions or something out of my control", *flagRecipeDir)
@@ -201,7 +201,7 @@ func initialization() error {
 		infoLogger.Printf("trying to use recipeDir %s from config", config.RecipeDir)
 		//MkdirAll returns nil on already exists or dir created, therefore errors are
 		//serious
-		mkErr := os.MkdirAll(config.RecipeDir, 0644)
+		mkErr := os.MkdirAll(config.RecipeDir, 0744)
 		//if error creating recipeDir, then attempt to use default
 		if mkErr != nil {
 			infoLogger.Printf("Unable to use %s as recipe directory, normally permissions or something out of my control", config.RecipeDir)
@@ -210,7 +210,7 @@ func initialization() error {
 		infoLogger.Printf("trying to use default recipeDir %s", defaultRecipeDir)
 		//MkdirAll returns nil on already exists or dir created, therefore errors are
 		//serious
-		mkErr := os.MkdirAll(defaultRecipeDir, 0644)
+		mkErr := os.MkdirAll(defaultRecipeDir, 0744)
 		//if error creating recipeDir, then attempt to use default
 		if mkErr != nil {
 			infoLogger.Printf("Unable to use %s as recipe directory, normally permissions or something out of my control", defaultRecipeDir)
