@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"io/ioutil"
+	"os"
 )
 
 //Configuration stores the configuration that is read in and out from a file
@@ -11,6 +12,7 @@ type Configuration struct {
 	RecipeDir string `json:"recipedir"`
 	//not stored, only used internally
 	configPath         string
+	configDir          string
 	configFileNotFound bool
 }
 
@@ -32,6 +34,10 @@ func writeConfig(c Configuration, filename string) error {
 	bytes, err := json.MarshalIndent(c, "", "  ")
 	if err != nil {
 		return err
+	}
+	chmodErr := os.Chmod(filename, 0744)
+	if chmodErr != nil {
+		return chmodErr
 	}
 	return ioutil.WriteFile(filename, bytes, 0)
 }
