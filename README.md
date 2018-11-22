@@ -1,2 +1,4 @@
-# recipe-database-backend
-Backend code and data structures for recipe software hosted in https://github.com/sww1235/recipe-database-cmd
+# recipe-database
+Recipe database schema and front end.
+
+Contains schema for a ingredient inventory database as well as for recipes.
