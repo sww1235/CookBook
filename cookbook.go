@@ -103,7 +103,7 @@ func initialization() error {
 	}
 	useDefaltsIfError := func(err bool) {
 		config.IPConfig = "127.0.0.1"
-		config.RecipeDir = path.Join(currUsr.HomeDir, "cookbook")
+		config.RecipeDatabaseDir = path.Join(currUsr.HomeDir, "cookbook")
 		config.configFileNotFound = false
 		if err {
 			config.configPath = ""
@@ -114,20 +114,21 @@ func initialization() error {
 
 	//default paths. Will not be overridden
 	configDir := path.Join(currUsr.HomeDir, ".config", "cookbook")
-	recipeDir := path.Join(currUsr.HomeDir, "cookbook")
+	recipeDatabaseDir := path.Join(currUsr.HomeDir, "cookbook")
 
-	//setting more defaults
+	//save default paths
 	defaultConfigPath := path.Join(configDir, "cookbook.cfg")
-	defaultRecipeDir := recipeDir
+	defaultRecipeDatabaseDir := recipeDatabaseDir
 
 	//setting config to defaults
 	config.configPath = defaultConfigPath
-	config.RecipeDir = defaultRecipeDir
+	config.RecipeDatabaseDir = defaultRecipeDatabaseDir
 
 	//Define and Parse commandline flags here
 	flagConfigPath := flag.String("c", defaultConfigPath, "Path to config file")
-	flagViewedRecipe := flag.String("v", "", "Recipe to view. Recipe name is case sensitive and must be typed exactly. This flag is provided as a courtesy for scripting and people who can't run termbox")
-	flagRecipeDir := flag.String("r", defaultRecipeDir, "Directory to store recipes in")
+	const flagViewedRecipeUsage = "Recipe to view. Recipe name is case sensitive and must be typed exactly. This flag is provided as a courtesy for scripting and people who can't run termbox"
+	flagViewedRecipe := flag.String("v", "", flagViewedRecipeUsage)
+	flagRecipeDir := flag.String("r", defaultRecipeDir, "Directory to store recipe database in")
 	flagAddRecipeToggle := flag.Bool("n", false, "Add new recipe")
 	flagHTTPServer := flag.Bool("H", false, "Use HTTP server instead of terminal")
 	flagIPConfig := flag.String("ip", "127.0.0.1", "IP to start HTTP server on")
@@ -174,7 +175,7 @@ func initialization() error {
 				useDefaltsIfError(false)
 			} else {
 				config.IPConfig = readConfig.IPConfig
-				config.RecipeDir = readConfig.RecipeDir
+				config.RecipeDatabaseDir = readConfig.RecipeDatabaseDir
 			}
 
 		}
