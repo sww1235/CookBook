@@ -21,8 +21,8 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/jroimartin/gocui"
-	backend "github.com/sww1235/recipe-database-backend"
+	"github.com/awesome-gocui/gocui"
+	backend "github.com/sww1235/recipe-database"
 )
 
 //Configuration stores the configuration that is read in and out from a file
