@@ -8,12 +8,9 @@ import (
 
 //Configuration stores the configuration that is read in and out from a file
 type Configuration struct {
-	IPConfig  string `json:"ipconfig"`
-	RecipeDir string `json:"recipedir"`
+	IPConfig       string `json:"ipconfig"`
+	RecipeDatabase string `json:"recipedatabase"`
 	//not stored, only used internally
-	configPath         string
-	configDir          string
-	configFileNotFound bool
 }
 
 func readConfig(filename string) (Configuration, error) {
