@@ -1,7 +1,11 @@
 package recipeDatabase
 
 import (
+	"bufio"
 	"fmt"
+	"os"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -73,4 +77,38 @@ func (r Recipe) String() string {
 
 	stringString += "\n\n"
 	return stringString
+}
+
+//ReadRecipe creates a recipe struct by prompting the user for input
+func ReadRecipe() (Recipe, error) {
+
+	var tempRecipe Recipe
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Print("Enter recipe Name: ")
+	tempString, err := reader.ReadString('\n')
+	if err != nil {
+		return tempRecipe, err
+	}
+	tempRecipe.Name = tempString
+
+	// read in quantity made and units
+	fmt.Println("Enter in Quantity made and units in the following format: \"000 units\"")
+	fmt.Println("Example entry: \"100 cookies\"")
+
+	tempString, err = reader.ReadString('\n')
+	if err != nil {
+		return tempRecipe, err
+	}
+	qtyMadeReturn := strings.Split(tempString, " ")
+	tempRecipe.QuantityMade, err = strconv.Atoi(qtyMadeReturn[0])
+	if err != nil {
+		return tempRecipe, err
+	}
+	tempRecipe.QuantityMadeUnits = qtyMadeReturn[1]
+
+	// read in ingredients
+
+	// read in steps
+
+	return tempRecipe, nil
 }

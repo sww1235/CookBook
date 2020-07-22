@@ -1,6 +1,11 @@
 package recipeDatabase
 
-import "fmt"
+import (
+	"bufio"
+	"fmt"
+	"os"
+	"strconv"
+)
 
 //The Ingredient struct stores data for a particular Ingredient
 //used in a recipe
@@ -42,4 +47,36 @@ type conversion struct {
 	FromUnit         string
 	ToUnit           string
 	ConversionFactor float64
+}
+
+// ReadIngredient creates an ingredient struct by prompting user for input
+func ReadIngredient() (Ingredient, error) {
+	var tempIngredient Ingredient
+
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Print("Enter ingredient Name: ")
+	tempString, err := reader.ReadString('\n')
+	if err != nil {
+		return tempIngredient, err
+	}
+	tempIngredient.Name = tempString
+
+	fmt.Print("Enter ingredient UPC: ")
+	tempString, err = reader.ReadString('\n')
+	if err != nil {
+		return tempIngredient, err
+	}
+	tempIngredient.UPC = tempString
+
+	fmt.Print("Enter ingredient Quantity: ")
+	tempString, err = reader.ReadString('\n')
+	if err != nil {
+		return tempIngredient, err
+	}
+	tempQty, err := strconv.ParseFloat(tempString, 64)
+
+	tempIngredient.QuantityNeeded = tempQty
+
+	return tempIngredient, nil
+
 }
