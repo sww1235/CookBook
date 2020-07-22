@@ -10,7 +10,6 @@ import (
 //A Recipe struct is the internal representation of a recipe JSON file
 type Recipe struct {
 	Name              string
-	FileName          string
 	Ingredients       []Ingredient
 	QuantityMade      int
 	QuantityMadeUnits string
