@@ -1,5 +1,7 @@
 # CookBook
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/c689b16fa94a4b89b5b17948628b1cbc)](https://app.codacy.com/manual/sww1235/CookBook?utm_source=github.com&utm_medium=referral&utm_content=sww1235/CookBook&utm_campaign=Badge_Grade_Dashboard)
+
 A recipe database built in golang
 
 executable code built using <http://github.com/sww1235/recipe-database-backend>
