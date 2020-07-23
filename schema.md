@@ -22,6 +22,7 @@ store information about a specific recipe. Multiple versions of a recipe are all
 | QuantityMade | integer | a specific quantity that this recipe makes. Allows for easy doubling or meal planning |
 | QuantityMadeUnits | VARCHAR | a foreign key linked to the units table to select a unit of measure for QuantityMade |
 
+
 ## Ingredient
 
 stores ingredients as used in recipes.
@@ -94,15 +95,15 @@ has composite primary key
 
 ## Inventory
 
-| Column Name | Datatype | Description |
-| ----------- | -------- | ----------- |
-| InventoryID | integer | unique ID for each inventory item (pk), since not every item is guarenteed to have a EAN |
-| EAN         | CHAR(14) | barcode data |
-| InventoryName | VARCHAR | short name of inventory item |
-| InventoryDescription | VARCHAR | description of inventory item |
-| Quantity | integer | quantity of item in inventory |
-| PackageQuantity | integer | quantity of item in package |
-| PackageQuantityUnits | VARCHAR | fk for referencing unit table |
+| Column Name     | Datatype (mysql) | Datatype (sqlite) | Description                     |
+| --------------- | ---------------- | ----------------- | ------------------------------- |
+| ID              | integer          | INTEGER           | unique ID for inventory item    |
+| EAN             | CHAR(14)         | TEXT              | barcode data                    |
+| Name            | VARCHAR          | TEXT              | short name of inventory item    |
+| Description     | VARCHAR          | TEXT              | description of inventory item   |
+| storedQty       | integer          | INTEGER           | quantity of item in inventory   |
+| PackageQty      | integer          | INTEGER           | quantity of item in package     |
+| PackageQtyUnits | integer          | INTEGER           | fk for referencing unit table   |
 
 ## Units
 
@@ -110,8 +111,31 @@ stores all units with a standardized PK and a human readable description
 
 <unitsofmeasure.org/ucum.html>
 
-| Column Name | Datatype | Description |
-| ----------- | -------- | ----------- |
-| UnitID | VARCHAR | unique ID for unit (follow ucum standard above) |
-| UnitName | VARCHAR | print name of unit |
-| UnitDescription | VARCHAR | description of unit |
+| Column Name | Datatype (mysql) | Datatype (sqlite) | Description                                     |
+| ----------- | ---------------- | ----------------- | ----------------------------------------------- |
+| ID          | int              | INTEGER           | unique ID for unit (follow ucum standard above) |
+| Name        | VARCHAR          | TEXT              | print name of unit                              |
+| Description | VARCHAR          | TEXT              | description of unit                             |
+
+## Tags
+
+
+| Column Name | Datatype (mysql) | Datatype (sqlite) | Description        |
+| ----------- | ---------------- | ----------------- | ------------------ |
+| ID          | int              | INTEGER           | unique ID for tag  |
+| Name        | VARCHAR          | TEXT              | name of tag        |
+| Description | VARCHAR          | TEXT              | description of tag |
+
+## Tag <-> Recipe (tag\_recipe)
+
+has composite primary key
+
+maps tags to recipes
+
+| Column Name | Datatype (mysql) | Datatype (sqlite) | Description               |
+| ----------- | ---------------- | ----------------- | ------------------------- |
+| tagID       | int              | INTEGER           | unique ID for tag (fk)    |
+| recipeID    | int              | INTEGER           | unique ID for recipe (fk) |
+
+
+
