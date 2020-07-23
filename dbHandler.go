@@ -36,7 +36,7 @@ func initDB(databasePath string) *sql.DB {
 
 	needInit := false
 	requiredTables := []string{"recipe", "ingredient", "ingredient_inventory", "ingredient_recipe",
-		"step", "stepType", "step_recipe", "inventory", "units"}
+		"step", "stepType", "step_recipe", "inventory", "units", "tags", "tag_recipe"}
 
 	for _, table := range requiredTables {
 		sqlStatement := "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='" + table + "'"
@@ -65,20 +65,24 @@ func initDB(databasePath string) *sql.DB {
 	}
 
 	if needInit {
-		// need to create table
+		// need to create tables
 		createUnitsTableQuery := "CREATE TABLE units(id INTEGER NOT NULL PRIMARY KEY, " +
 			"name TEXT, description TEXT)"
 		createRecTableQuery := "CREATE TABLE recipes (id INTEGER NOT NULL PRIMARY KEY, " +
 			"name TEXT, description TEXT, comments TEXT, source TEXT, author TEXT, " +
 			"quantity NUM, FOREIGN KEY(quantityUnits) REFERENCES units(id))"
 		createInvTableQuery := "CREATE TABLE inventory (id INTEGER NOT NULL PRIMARY KEY, " +
-			"EAN TEXT, name TEXT, description TEXT, quantity NUM, packageQuantity NUM, " +
+			"EAN TEXT UNIQUE, name TEXT, description TEXT, quantity NUM, packageQuantity NUM, " +
 			"FOREIGN KEY(packageQuantityUnits) REFERENCES units(id))"
-		createIngTableQuery := "CREATE TABLE ingredients (id INTEGER NOT NULL PRIMARY KEY"
+		createIngTableQuery := "CREATE TABLE ingredients (id INTEGER NOT NULL PRIMARY KEY, " +
+			"name TEXT, FOREIGN KEY(inventoryID) REFERENCES inventory(id), quantity NUM, " +
+			"FOREIGN KEY(quantityUnits) REFERENCES units(id))"
 		createIngInvTableQuery := ""
 		createStepTableQuery := "CREATE TABLE steps (id INTEGER NOT NULL PRIMARY KEY"
 		createStepTypeTableQuery := "CREATE TABLE stepType (id INTEGER NOT NULL PRIMARY KEY"
 		createStepRecTableQuery := ""
+		createTagTableQuery := ""
+		createTagRecTableQuery := ""
 
 	}
 	return db
