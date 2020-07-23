@@ -70,14 +70,19 @@ func initDB(databasePath string) *sql.DB {
 			"name TEXT, description TEXT)"
 		createRecTableQuery := "CREATE TABLE recipes (id INTEGER NOT NULL PRIMARY KEY, " +
 			"name TEXT, description TEXT, comments TEXT, source TEXT, author TEXT, " +
-			"quantity NUM, FOREIGN KEY(quantityUnits) REFERENCES units(id))"
+			"quantity NUM, quantityUnits INTEGER, FOREIGN KEY(quantityUnits) REFERENCES units(id))"
 		createInvTableQuery := "CREATE TABLE inventory (id INTEGER NOT NULL PRIMARY KEY, " +
 			"EAN TEXT UNIQUE, name TEXT, description TEXT, quantity NUM, packageQuantity NUM, " +
-			"FOREIGN KEY(packageQuantityUnits) REFERENCES units(id))"
+			"packageQuantityUnits INTEGER, FOREIGN KEY(packageQuantityUnits) REFERENCES units(id))"
 		createIngTableQuery := "CREATE TABLE ingredients (id INTEGER NOT NULL PRIMARY KEY, " +
-			"name TEXT, FOREIGN KEY(inventoryID) REFERENCES inventory(id), quantity NUM, " +
+			"name TEXT, quantity NUM, quantityUnits INTEGER, inventoryID INTEGER, " +
+			"FOREIGN KEY(inventoryID) REFERENCES inventory(id), " +
 			"FOREIGN KEY(quantityUnits) REFERENCES units(id))"
-		createIngInvTableQuery := ""
+		createIngInvTableQuery := "CREATE TABLE ingredient_inventory " +
+			"(ingredientID INTEGER NOT NULL, inventoryID INTEGER NOT NULL, " +
+			"FOREIGN KEY(ingredientID) REFERENCES ingredient(id), " +
+			"FOREIGN KEY(inventoryID) REFERNCES inventory(id), " +
+			"PRIMARY KEY(ingredientID, inventoryID))"
 		createStepTableQuery := "CREATE TABLE steps (id INTEGER NOT NULL PRIMARY KEY"
 		createStepTypeTableQuery := "CREATE TABLE stepType (id INTEGER NOT NULL PRIMARY KEY"
 		createStepRecTableQuery := ""
