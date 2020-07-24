@@ -102,8 +102,12 @@ func initDB(databasePath string) *sql.DB {
 			"FOREIGN KEY(stepTypeID) REFERENCES stepType(id), " +
 			"FOREIGN KEY(tempUnits) REFERENCES units(id))"
 
-		createStepRecTableQuery := ""
-		createTagTableQuery := ""
+		createStepRecTableQuery := "CREATE TABLE step_recipe( stepID INTEGER NOT NULL, " +
+			"recipeID INTEGER NOT NULL, " +
+			"FOREIGN KEY(stepID) REFERENCES step(id), " +
+			"FOREIGN KEY(recipeID) REFERENCES recipe(id), " +
+			"PRIMARY KEY(stepID, recipeID))"
+		createTagTableQuery := "CREATE TABLE tags(id INTEGER NOT NULL PRIMARY KEY, name TEXT NOT NULL)"
 		createTagRecTableQuery := ""
 
 	}
