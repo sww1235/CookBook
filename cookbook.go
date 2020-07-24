@@ -10,6 +10,7 @@ package main
 
 import (
 	"bufio"
+	"database/sql"
 	"flag"
 	"fmt"
 	"log"
@@ -47,7 +48,7 @@ func main() {
 			fatalLogger.Fatalf("%s not found in Recipes, check your spelling and capitilization\n",
 				viewedRecipe)
 		}
-		os.Exit(0)
+		finalize(db)
 	} else if addRecipeToggle {
 		//read in recipe from commandline
 		tempRecipe, err := backend.ReadRecipe()
@@ -60,7 +61,7 @@ func main() {
 		if err != nil {
 			fatalLogger.Fatalln("Error inserting new recipe into database:", err)
 		}
-		os.Exit(0)
+		finalize(db)
 	} else if httpServer {
 		err := startHTTPServer()
 		if err != nil {
@@ -72,6 +73,15 @@ func main() {
 			fatalLogger.Fatalln("Something went wrong with the CUI", err)
 		}
 	}
+
+	finalize(db)
+
+}
+
+func finalize(db *sql.DB) {
+
+	db.Close()
+	os.Exit(0)
 
 }
 
@@ -145,13 +155,6 @@ func initialization() error {
 		config.RecipeDatabase = defaultRecipeDatabase
 	}
 	return nil
-}
-
-func finalize() {
-
-	// close database
-	//
-
 }
 
 //check for and read ingredient database
