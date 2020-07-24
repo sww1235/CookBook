@@ -7,14 +7,13 @@ import (
 )
 
 func startCUI() error {
-	gui := gocui.NewGui()
-	err := gui.Init()
+	gui, err := gocui.NewGui(gocui.Output256, true)
 	if err != nil {
 		return err
 	}
 	defer gui.Close()
 
-	gui.SetLayout(layout)
+	gui.SetManagerFunc(layout)
 
 	if err := initKeybindings(gui); err != nil {
 		return err
@@ -33,14 +32,14 @@ func quit(g *gocui.Gui, v *gocui.View) error {
 func layout(gui *gocui.Gui) error {
 	maxX, maxY := gui.Size()
 
-	cmdView, cmdErr := gui.SetView("cmd", 0, maxY-2, maxX, maxY)
+	cmdView, cmdErr := gui.SetView("cmd", 0, maxY-2, maxX, maxY, 0)
 	if cmdErr != nil {
 		if cmdErr != gocui.ErrUnknownView {
 			return cmdErr
 		}
 		fmt.Fprintln(cmdView, "^C: Exit")
 	}
-	mainView, mainErr := gui.SetView("main", 0, 0, maxX, maxY-2)
+	mainView, mainErr := gui.SetView("main", 0, 0, maxX, maxY-2, 0)
 	if mainErr != nil {
 		if mainErr != gocui.ErrUnknownView {
 			return mainErr
@@ -77,7 +76,7 @@ func test3(gui *gocui.Gui, view *gocui.View) error {
 		return err
 	}
 	fmt.Fprintln(view, "this is test2 firing")
-	if _, err := gui.SetView(name, x0, y0, x1, y1); err != nil {
+	if _, err := gui.SetView(name, x0, y0, x1, y1, 0); err != nil {
 		return err
 	}
 
