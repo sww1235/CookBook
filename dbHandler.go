@@ -37,11 +37,23 @@ func initDB(databasePath string) *sql.DB {
 
 	// now check if correct tables exist, and create them if they do not.
 
-	needInit := false
-	requiredTables := []string{"recipes", "ingredients", "ingredient_inventory", "ingredient_recipe",
-		"steps", "stepType", "step_recipe", "inventory", "units", "tags", "tag_recipe"}
+	needInit := true
+	missingTable := false
+	requiredTables := map[string]bool{
+		"recipes":              false,
+		"ingredients":          false,
+		"ingredient_inventory": false,
+		"ingredient_recipe":    false,
+		"steps":                false,
+		"stepType":             false,
+		"step_recipe":          false,
+		"inventory":            false,
+		"units":                false,
+		"tags":                 false,
+		"tag_recipe":           false,
+	}
 
-	for _, table := range requiredTables {
+	for table := range requiredTables {
 		sqlStatement := fmt.Sprintf("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='%s'", table)
 		debugLogger.Println(sqlStatement)
 		rows, err := db.Query(sqlStatement)
@@ -63,10 +75,24 @@ func initDB(databasePath string) *sql.DB {
 		rows.Close()
 
 		if rowCount == 0 {
-			// Assuming that if one table is missing, all tables will need to be recreated.
-			needInit = true
-			break
+			requiredTables[table] = true
+
 		}
+	}
+
+	for table, missing := range requiredTables {
+		// any false values will cancel out the true initial value
+		// for needInit. needInit will only be true if all tables are missing
+		needInit = missing && needInit
+		// missingTable will be true if any of the tables are missing
+		missingTable = missing || missingTable
+		if missing {
+			infoLogger.Printf("Table %s missing. Manually create this table, or delete database so it can be recreated.", table)
+		}
+	}
+
+	if missingTable {
+		fatalLogger.Panicln("Existing database missing critical table. See log messages above.")
 	}
 
 	if needInit {
