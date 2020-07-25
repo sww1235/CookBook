@@ -25,13 +25,14 @@ func startCUI() error {
 	return nil
 }
 
-func quit(g *gocui.Gui, v *gocui.View) error {
+func quit(_ *gocui.Gui, _ *gocui.View) error {
 	return gocui.ErrQuit
 }
 
 func layout(gui *gocui.Gui) error {
 	maxX, maxY := gui.Size()
 
+	//cmd view prints available commands for each view
 	cmdView, cmdErr := gui.SetView("cmd", 0, maxY-2, maxX, maxY, 0)
 	if cmdErr != nil {
 		if !gocui.IsUnknownView(cmdErr) {
@@ -39,6 +40,8 @@ func layout(gui *gocui.Gui) error {
 		}
 		fmt.Fprintln(cmdView, "^C: Exit")
 	}
+
+	// main view shows usage instructions and main keyboard commands
 	mainView, mainErr := gui.SetView("main", 0, 0, maxX, maxY-2, 0)
 	if mainErr != nil {
 		if !gocui.IsUnknownView(mainErr) {
@@ -46,6 +49,11 @@ func layout(gui *gocui.Gui) error {
 		}
 		fmt.Fprintln(mainView, "this is a test")
 	}
+
+	// recipe view displays individual recipe
+
+	//recipeView, recipeErr := gui.SetView("recipe",
+
 	return nil
 }
 
@@ -53,19 +61,11 @@ func initKeybindings(gui *gocui.Gui) error {
 	if err := gui.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, quit); err != nil {
 		return err
 	}
-	if err := gui.SetKeybinding("", gocui.KeyArrowDown, gocui.ModNone,
-		func(g *gocui.Gui, v *gocui.View) error {
-			return test3(g, v)
-		}); err != nil {
+	if err := gui.SetKeybinding("", gocui.KeyArrowDown, gocui.ModNone, test3); err != nil {
 		return err
 	}
 
 	return nil
-}
-
-func test2(gui *gocui.Gui, view *gocui.View) error {
-	infoLogger.Println(view.Name())
-	return test3(gui, view)
 }
 
 func test3(gui *gocui.Gui, view *gocui.View) error {
