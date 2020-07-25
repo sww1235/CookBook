@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"os"
 	"path"
 
@@ -37,11 +38,12 @@ func initDB(databasePath string) *sql.DB {
 	// now check if correct tables exist, and create them if they do not.
 
 	needInit := false
-	requiredTables := []string{"recipe", "ingredient", "ingredient_inventory", "ingredient_recipe",
-		"step", "stepType", "step_recipe", "inventory", "units", "tags", "tag_recipe"}
+	requiredTables := []string{"recipes", "ingredients", "ingredient_inventory", "ingredient_recipe",
+		"steps", "stepType", "step_recipe", "inventory", "units", "tags", "tag_recipe"}
 
 	for _, table := range requiredTables {
-		sqlStatement := "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='" + table + "'"
+		sqlStatement := fmt.Sprintf("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='%s'", table)
+		infoLogger.Println(sqlStatement)
 		rows, err := db.Query(sqlStatement)
 		if err != nil {
 			fatalLogger.Panicln("could not check if table exists", err)
@@ -54,6 +56,7 @@ func initDB(databasePath string) *sql.DB {
 			if err != nil {
 				fatalLogger.Fatalln("reading row count failed", err)
 			}
+			infoLogger.Println(count)
 			rowCount = count
 		}
 
@@ -88,14 +91,14 @@ func initDB(databasePath string) *sql.DB {
 
 		createQueries["IngInvTable"] = "CREATE TABLE ingredient_inventory( " +
 			"ingredientID INTEGER NOT NULL, inventoryID INTEGER NOT NULL, " +
-			"FOREIGN KEY(ingredientID) REFERENCES ingredient(id), " +
-			"FOREIGN KEY(inventoryID) REFERNCES inventory(id), " +
+			"FOREIGN KEY(ingredientID) REFERENCES ingredients(id), " +
+			"FOREIGN KEY(inventoryID) REFERENCES inventory(id), " +
 			"PRIMARY KEY(ingredientID, inventoryID))"
 
 		createQueries["IngRecTable"] = "CREATE TABLE ingredient_recipe( " +
 			"ingredientID INTEGER NOT NULL, recipeID INTEGER NOT NULL, " +
-			"FOREIGN KEY(ingredientID) REFERENCES ingredient(id), " +
-			"FOREIGN KEY(recipeID) REFERENCES recipe(id), " +
+			"FOREIGN KEY(ingredientID) REFERENCES ingredients(id), " +
+			"FOREIGN KEY(recipeID) REFERENCES recipes(id), " +
 			"PRIMARY KEY(ingredientID, recipeID))"
 
 		createQueries["StepTypeTable"] = "CREATE TABLE stepType (id INTEGER NOT NULL PRIMARY KEY, " +
@@ -108,15 +111,17 @@ func initDB(databasePath string) *sql.DB {
 
 		createQueries["StepRecTable"] = "CREATE TABLE step_recipe( stepID INTEGER NOT NULL, " +
 			"recipeID INTEGER NOT NULL, " +
-			"FOREIGN KEY(stepID) REFERENCES step(id), " +
-			"FOREIGN KEY(recipeID) REFERENCES recipe(id), " +
+			"FOREIGN KEY(stepID) REFERENCES steps(id), " +
+			"FOREIGN KEY(recipeID) REFERENCES recipes(id), " +
 			"PRIMARY KEY(stepID, recipeID))"
 		createQueries["TagTable"] = "CREATE TABLE tags(id INTEGER NOT NULL PRIMARY KEY, name TEXT NOT NULL)"
 
 		createQueries["TagRecTable"] = "CREATE TABLE tag_recipe( tagID INTEGER NOT NULL, recipeID INTEGER NOT NULL, " +
-			"FOREIGN KEY(tagID) REFERENCES tag(id), " +
-			"FOREIGN KEY(recipeID) REFERENCES recipe(id), " +
+			"FOREIGN KEY(tagID) REFERENCES tags(id), " +
+			"FOREIGN KEY(recipeID) REFERENCES recipes(id), " +
 			"PRIMARY KEY(tagID, recipeID))"
+
+		// since not all tables exist, for now drop all tables, then recreate them
 
 		// now create all the tables
 		for table, query := range createQueries {
