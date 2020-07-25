@@ -27,11 +27,13 @@ store information about a specific recipe. Multiple versions of a recipe are all
 
 stores ingredients as used in recipes.
 
-| Column Name | Datatype | Description |
-| ----------- | -------- | ----------- |
-| IngredientID | integer (autoincrement) | unique ID for each ingredient |
-| IngredientName | VARCHAR | name of ingredient |
-| InventoryID | integer | foreign key mapping ingredient to its precursor inventory item |
+| Column Name   | Datatype (mysql) | Datatype (sqlite) | Description                                |
+| ------------- | ---------------- | ----------------- | ------------------------------------------ |
+| ID            | integer (pk)     | INTEGER (pk)      | unique ID for each ingredient              |
+| Name          | VARCHAR          | TEXT              | name of ingredient                         |
+| InventoryID   | integer (fk)     | INTEGER (fk)      | ingredient to its precursor inventory item |
+| Quantity      | decimal          | NUM               | quantity of ingredient used in recipe      |
+| QuantityUnits | integer (fk)     | INTEGER (fk)      | units of ingredient used in recipe         |
 
 ## Ingredient <-> Inventory
 
@@ -51,12 +53,8 @@ maps ingredients or sub recipes to recipes
 
 | Column Name | Datatype | Description |
 | ----------- | -------- | ----------- |
-| IngRecMapID | integer (autoincrement) | unique ID for each ingredient <-> recipe mapping |
 | RecipeID | integer | unique ID for each recipe (fk) |
 | IngredientID | integer | unique ID for each ingredient (fk) |
-| IngOrRec | integer or boolean | whether mapping is to another recipe or is to an ingredient |
-| IngredientQuantity | integer | how much of ingredient is needed for recipe |
-| IngredientQuantityUnits | VARCHAR | foreign key mapping to units table to select a unit for IngredientQuantity |
 
 
 
@@ -67,9 +65,9 @@ Probably done using encoding in the step instructions field of the IngredientID
 
 | Column Name | Datatype | Description |
 | ----------- | -------- | ----------- |
-| StepID | integer (autoincrement) | unique ID for step |
-| StepInstructions | VARCHAR | instructions for step |
-| StepTime | integer | stores time of step in seconds. Will be displayed as other units |
+| ID | integer (autoincrement) | unique ID for step |
+| Instructions | VARCHAR | instructions for step |
+| Time | integer | stores time of step in seconds. Will be displayed as other units |
 | StepTypeID | integer | foreign key mapping to step type description table (fake enum) |
 | temperature | integer | cooking temperature of step |
 | temperatureUnits | VARCHAR | foreignKey mapping to units table |
@@ -79,8 +77,8 @@ Probably done using encoding in the step instructions field of the IngredientID
 
 | Column Name | Datatype | Description |
 | ----------- | -------- | ----------- |
-| StepTypeID | integer (autoincrement) | unique ID for stepType |
-| StepName | VARCHAR | name of step type (prep, cook, wait, other) |
+| ID | integer (autoincrement) | unique ID for stepType |
+| Name | VARCHAR | name of step type (prep, cook, wait, other) |
 
 ## Step <-> Recipe
 
