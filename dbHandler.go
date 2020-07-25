@@ -43,7 +43,7 @@ func initDB(databasePath string) *sql.DB {
 
 	for _, table := range requiredTables {
 		sqlStatement := fmt.Sprintf("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='%s'", table)
-		infoLogger.Println(sqlStatement)
+		debugLogger.Println(sqlStatement)
 		rows, err := db.Query(sqlStatement)
 		if err != nil {
 			fatalLogger.Panicln("could not check if table exists", err)
@@ -54,9 +54,9 @@ func initDB(databasePath string) *sql.DB {
 			var count int
 			err = rows.Scan(&count)
 			if err != nil {
-				fatalLogger.Fatalln("reading row count failed", err)
+				fatalLogger.Panicln("reading row count failed", err)
 			}
-			infoLogger.Println(count)
+			debugLogger.Println(count)
 			rowCount = count
 		}
 
@@ -128,7 +128,7 @@ func initDB(databasePath string) *sql.DB {
 
 			_, err := db.Exec(query)
 			if err != nil {
-				fatalLogger.Fatalf("Failed to create table: %s due to error: %s", table, err)
+				fatalLogger.Panicf("Failed to create table: %s due to error: %s", table, err)
 			}
 		}
 

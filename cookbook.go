@@ -13,6 +13,7 @@ import (
 	"database/sql"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"path"
@@ -30,6 +31,7 @@ var httpServerFlagIP string
 
 var config Configuration
 
+var debugLogger = log.New(ioutil.Discard, "DEBUG: ", 0)
 var infoLogger = log.New(os.Stderr, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
 var fatalLogger = log.New(os.Stderr, "FATAL: ", log.Ldate|log.Ltime|log.Lshortfile)
 
@@ -45,7 +47,7 @@ func main() {
 	if viewedRecipe != "" {
 		err := displaySingleRecipe(viewedRecipe)
 		if err != nil {
-			fatalLogger.Fatalf("%s not found in Recipes, check your spelling and capitilization\n",
+			fatalLogger.Panicf("%s not found in Recipes, check your spelling and capitilization\n",
 				viewedRecipe)
 		}
 		finalize(db)
@@ -53,24 +55,24 @@ func main() {
 		//read in recipe from commandline
 		tempRecipe, err := backend.ReadRecipe()
 		if err != nil {
-			fatalLogger.Fatalln("Error reading recipe from command line:", err)
+			fatalLogger.Panicln("Error reading recipe from command line:", err)
 		}
 		//insert it into database
 
 		err = insertRecipe(db, tempRecipe)
 		if err != nil {
-			fatalLogger.Fatalln("Error inserting new recipe into database:", err)
+			fatalLogger.Panicln("Error inserting new recipe into database:", err)
 		}
 		finalize(db)
 	} else if httpServer {
 		err := startHTTPServer()
 		if err != nil {
-			fatalLogger.Fatalln("Something went wrong with the HTTP server", err)
+			fatalLogger.Panicln("Something went wrong with the HTTP server", err)
 		}
 	} else {
 		err := startCUI()
 		if err != nil && err != gocui.ErrQuit {
-			fatalLogger.Fatalln("Something went wrong with the CUI", err)
+			fatalLogger.Panicln("Something went wrong with the CUI", err)
 		}
 	}
 
@@ -117,12 +119,18 @@ func initialization() error {
 	const flagViewedRecipeUsage = "Recipe to view. Recipe name is case sensitive " +
 		"and must be typed exactly. This flag is provided as a courtesy for " +
 		"scripting and people who can't run termbox"
-	flagViewedRecipe := flag.String("v", "", flagViewedRecipeUsage)
-	flagRecipeDatabaseDir := flag.String("r", defaultRecipeDatabaseDir, "Directory to store recipe database in")
+	flagViewedRecipe := flag.String("r", "", flagViewedRecipeUsage)
+	flagRecipeDatabaseDir := flag.String("db", defaultRecipeDatabaseDir, "Directory to store recipe database")
 	flagAddRecipeToggle := flag.Bool("n", false, "Add new recipe")
 	flagHTTPServer := flag.Bool("H", false, "Use HTTP server instead of terminal")
 	flagIPConfig := flag.String("ip", defaultServerIP, "IP to start HTTP server on")
+	flagDebugLogging := flag.Bool("D", false, "Show debug logs")
 	flag.Parse()
+
+	if *flagDebugLogging {
+		debugLogger.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
+		debugLogger.SetOutput(os.Stdout)
+	}
 
 	//Retrieve some values from flags and set global variables
 	//if these flags are not set, defaults will be set
