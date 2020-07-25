@@ -34,14 +34,14 @@ func layout(gui *gocui.Gui) error {
 
 	cmdView, cmdErr := gui.SetView("cmd", 0, maxY-2, maxX, maxY, 0)
 	if cmdErr != nil {
-		if cmdErr != gocui.ErrUnknownView {
+		if !gocui.IsUnknownView(cmdErr) {
 			return cmdErr
 		}
 		fmt.Fprintln(cmdView, "^C: Exit")
 	}
 	mainView, mainErr := gui.SetView("main", 0, 0, maxX, maxY-2, 0)
 	if mainErr != nil {
-		if mainErr != gocui.ErrUnknownView {
+		if !gocui.IsUnknownView(mainErr) {
 			return mainErr
 		}
 		fmt.Fprintln(mainView, "this is a test")
