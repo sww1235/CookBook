@@ -10,7 +10,6 @@ package main
 
 import (
 	"bufio"
-	"database/sql"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -18,7 +17,6 @@ import (
 	"os"
 	"path"
 
-	"github.com/awesome-gocui/gocui"
 	backend "github.com/sww1235/recipe-database"
 )
 
@@ -44,13 +42,14 @@ func main() {
 
 	db := initDB(config.RecipeDatabase)
 
+	defer db.Close()
+
 	if viewedRecipe != "" {
 		err := displaySingleRecipe(viewedRecipe)
 		if err != nil {
 			fatalLogger.Panicf("%s not found in Recipes, check your spelling and capitilization\n",
 				viewedRecipe)
 		}
-		finalize(db)
 	} else if addRecipeToggle {
 		//read in recipe from commandline
 		tempRecipe, err := backend.ReadRecipe()
@@ -63,7 +62,6 @@ func main() {
 		if err != nil {
 			fatalLogger.Panicln("Error inserting new recipe into database:", err)
 		}
-		finalize(db)
 	} else if httpServer {
 		err := startHTTPServer()
 		if err != nil {
@@ -71,20 +69,12 @@ func main() {
 		}
 	} else {
 		err := startCUI()
-		if err != nil && err != gocui.ErrQuit {
+		if err != nil {
 			fatalLogger.Panicln("Something went wrong with the CUI", err)
 		}
 	}
 
-	finalize(db)
-
-}
-
-func finalize(db *sql.DB) {
-
-	db.Close()
-	os.Exit(0)
-
+	// defers in main will run here
 }
 
 //initialization sets up command line options, logging and config stuffs
