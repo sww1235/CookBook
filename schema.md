@@ -143,4 +143,15 @@ maps tags to recipes
 | recipeID    | int (pk, fk)     | INTEGER (pk, fk)  | unique ID for recipe      |
 
 
+## lastMade
+
+records when a recipe was made. This is marked manually by the chef
+
+| Column Name | Datatype (mysql) | Datatype (sqlite) | Description          |
+| ----------- | ---------------- | ----------------- | -------------------- |
+| ID          | int (pk)         | INTEGER (pk)      | unique id            |
+| recipe      | int (fk)         | INTEGER (fk)      | related recipe       |
+| dateMade    | date             | TEXT              | date recipe was made |
+| notes       | text             | TEXT              | notes from cooking   |
+
 
