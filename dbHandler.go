@@ -51,6 +51,7 @@ func initDB(databasePath string) *sql.DB {
 		"units":                false,
 		"tags":                 false,
 		"tag_recipe":           false,
+		"lastMade":             false,
 	}
 
 	for table := range requiredTables {
@@ -95,6 +96,8 @@ func initDB(databasePath string) *sql.DB {
 		fatalLogger.Panicln("Existing database missing critical table. See log messages above.")
 	}
 
+	//TODO: provide a way to link recipes, and store revisions of recipes.
+	//TODO: implement conversion table, with both standard and custom conversion
 	if needInit {
 		// need to create tables
 		// using map to allow for easier iteration
@@ -140,12 +143,17 @@ func initDB(databasePath string) *sql.DB {
 			"FOREIGN KEY(stepID) REFERENCES steps(id), " +
 			"FOREIGN KEY(recipeID) REFERENCES recipes(id), " +
 			"PRIMARY KEY(stepID, recipeID))"
+
 		createQueries["TagTable"] = "CREATE TABLE tags(id INTEGER NOT NULL PRIMARY KEY, name TEXT NOT NULL)"
 
 		createQueries["TagRecTable"] = "CREATE TABLE tag_recipe( tagID INTEGER NOT NULL, recipeID INTEGER NOT NULL, " +
 			"FOREIGN KEY(tagID) REFERENCES tags(id), " +
 			"FOREIGN KEY(recipeID) REFERENCES recipes(id), " +
 			"PRIMARY KEY(tagID, recipeID))"
+
+		createQueries["lastMade"] = "CREATE TABLE lastMade(id INTEGER NOT NULL PRIMARY KEY, " +
+			"recipe INTEGER NOT NULL, dateMade TEXT, notes TEXT, " +
+			"FOREIGN KEY(recipe) REFERENCES recipes(id))"
 
 		// since not all tables exist, for now drop all tables, then recreate them
 
