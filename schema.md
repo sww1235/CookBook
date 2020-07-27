@@ -4,24 +4,22 @@ want to have separate ingredient and inventory tables as they can have different
 names or purchase quantities. IE, ingredient would be 1lb flour and inventory
 would be 5lb bag flour, potentially with a partial remaining quantity.
 
-TODO: Need to evaluate all VARCHARs for potential changes to text and any
-integers for changes to floats.
-
 ## recipe
 
 store information about a specific recipe. Multiple versions of a recipe are allowed
 
-| Column Name       | Datatype (mysql) | Datatyle (sqlite) | Description                                                                           |
-| ----------------- | ---------------- | ----------------- | ------------------------------------------------------------------------------------- |
-| ID                | int (pk)         | INTEGER (pk)      | unique ID for each recipe                                                             |
-| Name              | text             | TEXT              | Name of recipe                                                                        |
-| Description       | text             | TEXT              | Short Description of recipe.                                                          |
-| Comments          | text             | TEXT              | comments on recipe or history of recipe                                               |
-| Source            | text             | TEXT              | source of recipe, include URL or other info                                           |
-| Author            | text             | TEXT              | name of original creator of specific recipe (if known)                                |
-| QuantityMade      | decimal(7,2)     | NUM               | a specific quantity that this recipe makes. Allows for easy doubling or meal planning |
-| QuantityMadeUnits | INT (fk)         | INTEGER (fk)      | a foreign key linked to the units table to select a unit of measure for QuantityMade  |
-
+| Column Name       | Datatype (mysql) | Datatyle (sqlite) | Description                                               |
+| ----------------- | ---------------- | ----------------- | --------------------------------------------------------- |
+| ID                | int (pk)         | INTEGER (pk)      | unique ID for each recipe                                 |
+| Name              | text             | TEXT              | Name of recipe                                            |
+| Description       | text             | TEXT              | Short Description of recipe.                              |
+| Comments          | text             | TEXT              | comments on recipe or history of recipe                   |
+| Source            | text             | TEXT              | source of recipe, include URL or other info               |
+| Author            | text             | TEXT              | name of original creator of specific recipe (if known)    |
+| QuantityMade      | decimal(7,2)     | NUM               | a specific quantity that this recipe makes.               |
+| QuantityMadeUnits | int (fk)         | INTEGER (fk)      | unit of measure for QuantityMade                          |
+| initialVersion    | int (fk)         | INTEGER (fk)      | original version of recipe for revisions. null if no revs |
+| version           | int              | INTEGER           | revision number of recipe                                 |
 
 ## ingredient
 
@@ -116,11 +114,13 @@ stores all units with a standardized PK and a human readable description
 
 <unitsofmeasure.org/ucum.html>
 
-| Column Name | Datatype (mysql) | Datatype (sqlite) | Description                                     |
-| ----------- | ---------------- | ----------------- | ----------------------------------------------- |
-| ID          | int (pk)         | INTEGER (pk)      | unique ID for unit (follow ucum standard above) |
-| Name        | text             | TEXT              | print name of unit                              |
-| Description | text             | TEXT              | description of unit                             |
+| Column Name  | Datatype (mysql) | Datatype (sqlite) | Description                |
+| ------------ | ---------------- | ----------------- | -------------------------- |
+| ID           | int (pk)         | INTEGER (pk)      | unique ID for unit         |
+| Name         | text             | TEXT              | print name of unit         |
+| Description  | text             | TEXT              | description of unit        |
+| Symbol       | text             | TEXT              | unit symbol                |
+| IsCustomUnit | bool             | NUM               | is unit custom or standard |
 
 ## tags
 
@@ -154,4 +154,12 @@ records when a recipe was made. This is marked manually by the chef
 | dateMade    | date             | TEXT              | date recipe was made |
 | notes       | text             | TEXT              | notes from cooking   |
 
+## equipment
 
+larger equipment needed to cook recipes
+
+| Column Name | Datatype (mysql) | Datatype (sqlite) | Description        |
+| ----------- | ---------------- | ----------------- | ------------------ |
+| ID          | int (pk)         | INTEGER (pk)      | unique id          |
+| name        | text             | TEXT              | name of equipment  |
+| isOwned     | bool             | NUM               | is equipment owned |
