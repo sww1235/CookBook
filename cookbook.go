@@ -16,6 +16,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"strconv"
 
 	backend "github.com/sww1235/recipe-database"
 )
@@ -28,6 +29,8 @@ var httpServer bool
 var httpServerFlagIP string
 
 var config Configuration
+
+var units map[string]backend.Unit
 
 var debugLogger = log.New(ioutil.Discard, "DEBUG: ", 0)
 var infoLogger = log.New(os.Stderr, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
@@ -52,7 +55,7 @@ func main() {
 		}
 	} else if addRecipeToggle {
 		//read in recipe from commandline
-		tempRecipe, err := backend.ReadRecipe()
+		tempRecipe, err := ReadRecipe()
 		if err != nil {
 			fatalLogger.Panicln("Error reading recipe from command line:", err)
 		}
@@ -155,12 +158,52 @@ func initialization() error {
 	return nil
 }
 
-//check for and read ingredient database
+//ReadRecipe creates a recipe struct by prompting the user for input
+func ReadRecipe() (backend.Recipe, error) {
 
-//establish ncurses-like gui, look at termbox-go or gocui, mop-tracker
-//or hecate for example programs
+	var tempRecipe backend.Recipe
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Println("Adding new recipe to database. Press Ctrl-C to abort")
+	fmt.Print("Enter recipe Name: ")
+	tempString, err := reader.ReadString('\n')
+	if err != nil {
+		return tempRecipe, err
+	}
+	tempRecipe.Name = tempString
 
-//add new recipe function
+	// read in quantity made and units
+	fmt.Print("Enter the number of things the recipe makes: ")
+
+	tempString, err = reader.ReadString('\n')
+	if err != nil {
+		return tempRecipe, err
+	}
+	tempRecipe.QuantityMade, err = strconv.Atoi(tempString)
+	if err != nil {
+		return tempRecipe, err
+	}
+
+	for {
+		tempString, err = reader.ReadString('\n')
+		if err != nil {
+			return tempRecipe, err
+		}
+
+		tempUnit, ok := units[tempString]
+
+		if ok {
+
+			tempRecipe.QuantityMadeUnits = tempUnit
+			break
+		}
+	}
+
+	// read in ingredients
+
+	// read in steps
+
+	return tempRecipe, nil
+}
 
 //displaySingleRecipe prints a full recipe to stdout using the recipe.print method
 //recipeName is passed into sql prepared statement.
