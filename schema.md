@@ -159,5 +159,15 @@ records when a recipe was made. This is marked manually by the chef
 | Column Name | Datatype (mysql) | Datatype (sqlite) | Description        |
 | ----------- | ---------------- | ----------------- | ------------------ |
 | ID          | int (pk)         | INTEGER (pk)      | unique id          |
-| Name        | text             | TEXT              | name of equipment  | 
+| Name        | text             | TEXT              | name of equipment  |
 | isOwned     | bool             | NUM               | is equipment owned |
+
+
+## unitConversions
+
+| Column Name | Datatype (mysql) | Datatype (sqlite) | Description                |
+| ----------- | ---------------- | ----------------- | -------------------------- |
+| ID          | int (pk)         | INTEGER (pk)      | unique id                  |
+| fromUnit    | int (fk)         | INTEGER (fk)      | id of unit being converted |
+| toUnit      | int (fk)         | INTEGER (fk)      | id of unit to convert to   |
+| convFactor  | decimal(12,3)    | NUM               | conversion factor          |
