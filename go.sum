@@ -20,8 +20,6 @@ github.com/rivo/tview v0.0.0-20200712113419-c65badfc3d92 h1:rqaqSUdaW+OBbjnsrOoi
 github.com/rivo/tview v0.0.0-20200712113419-c65badfc3d92/go.mod h1:6lkG1x+13OShEf0EaOCaTQYyB7d5nSbb181KtjlS+84=
 github.com/rivo/uniseg v0.1.0 h1:+2KBaVoUmb9XzDsrx/Ct0W/EYOSFf/nWTauy++DprtY=
 github.com/rivo/uniseg v0.1.0/go.mod h1:J6wj4VEh+S6ZtnVlnTBMWIodfgj8LQOQFoIToxlJtxc=
-github.com/sww1235/recipe-database v0.0.0-20200727002850-2508feeca273 h1:9vGJTC1PSn3frk3zHuh64SbZh039SNOIFlwn3ofUioY=
-github.com/sww1235/recipe-database v0.0.0-20200727002850-2508feeca273/go.mod h1:RCtLFKV4ZUyRdRepUYbecDaDqqKADzLSAYhzai4eW7s=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
 golang.org/x/net v0.0.0-20180218175443-cbe0f9307d01/go.mod h1:mL1N/T3taQHkDXs73rZJwtUhF3w3ftmwwsq0BUmARs4=
 golang.org/x/net v0.0.0-20200202094626-16171245cfb2/go.mod h1:z5CRVTTTmAJ677TzLLGU+0bjPO0LkuOLi4/5GtJWs/s=

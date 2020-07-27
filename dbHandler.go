@@ -6,8 +6,8 @@ import (
 	"os"
 	"path"
 
+	backend "./recipe-database"
 	_ "github.com/mattn/go-sqlite3"
-	backend "github.com/sww1235/recipe-database"
 )
 
 //initDB opens a connection to a sqlite database that stores recipes

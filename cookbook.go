@@ -18,7 +18,7 @@ import (
 	"path"
 	"strconv"
 
-	backend "github.com/sww1235/recipe-database"
+	backend "./recipe-database"
 )
 
 //Configuration stores the configuration that is read in and out from a file
