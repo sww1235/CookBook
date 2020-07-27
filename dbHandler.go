@@ -52,6 +52,9 @@ func initDB(databasePath string) *sql.DB {
 		"tags":                 false,
 		"tag_recipe":           false,
 		"lastMade":             false,
+		"equipment":            false,
+		"unitType":             false,
+		"unitConversions":      false,
 	}
 
 	for table := range requiredTables {
@@ -96,57 +99,57 @@ func initDB(databasePath string) *sql.DB {
 		fatalLogger.Panicln("Existing database missing critical table. See log messages above.")
 	}
 
-	//TODO: provide a way to link recipes, and store revisions of recipes.
-	//TODO: implement conversion table, with both standard and custom conversion
 	if needInit {
 		// need to create tables
 		// using map to allow for easier iteration
 		createQueries := make(map[string]string)
-		createQueries["UnitsTable"] = "CREATE TABLE units(id INTEGER NOT NULL PRIMARY KEY, " +
+		createQueries["units"] = "CREATE TABLE units(id INTEGER NOT NULL PRIMARY KEY, " +
 			"name TEXT, description TEXT)"
 
-		createQueries["RecTable"] = "CREATE TABLE recipes (id INTEGER NOT NULL PRIMARY KEY, " +
+		createQueries["recipes"] = "CREATE TABLE recipes (id INTEGER NOT NULL PRIMARY KEY, " +
 			"name TEXT, description TEXT, comments TEXT, source TEXT, author TEXT, " +
-			"quantity NUM, quantityUnits INTEGER, FOREIGN KEY(quantityUnits) REFERENCES units(id))"
+			"quantity NUM, quantityUnits INTEGER, initialVersion INTEGER, version INTEGER, " +
+			"FOREIGN KEY(quantityUnits) REFERENCES units(id), " +
+			"FOREIGN KEY(initialVersion) REFERENCES recipes(id))"
 
-		createQueries["InvTable"] = "CREATE TABLE inventory (id INTEGER NOT NULL PRIMARY KEY, " +
+		createQueries["inventory"] = "CREATE TABLE inventory (id INTEGER NOT NULL PRIMARY KEY, " +
 			"EAN TEXT UNIQUE, name TEXT, description TEXT, quantity NUM, packageQuantity NUM, " +
 			"packageQuantityUnits INTEGER, FOREIGN KEY(packageQuantityUnits) REFERENCES units(id))"
 
-		createQueries["IngTable"] = "CREATE TABLE ingredients (id INTEGER NOT NULL PRIMARY KEY, " +
+		createQueries["ingredients"] = "CREATE TABLE ingredients (id INTEGER NOT NULL PRIMARY KEY, " +
 			"name TEXT, quantity NUM, quantityUnits INTEGER, inventoryID INTEGER, " +
 			"FOREIGN KEY(inventoryID) REFERENCES inventory(id), " +
 			"FOREIGN KEY(quantityUnits) REFERENCES units(id))"
 
-		createQueries["IngInvTable"] = "CREATE TABLE ingredient_inventory( " +
+		createQueries["ingredient_inventory"] = "CREATE TABLE ingredient_inventory( " +
 			"ingredientID INTEGER NOT NULL, inventoryID INTEGER NOT NULL, " +
 			"FOREIGN KEY(ingredientID) REFERENCES ingredients(id), " +
 			"FOREIGN KEY(inventoryID) REFERENCES inventory(id), " +
 			"PRIMARY KEY(ingredientID, inventoryID))"
 
-		createQueries["IngRecTable"] = "CREATE TABLE ingredient_recipe( " +
+		createQueries["ingredient_recipe"] = "CREATE TABLE ingredient_recipe( " +
 			"ingredientID INTEGER NOT NULL, recipeID INTEGER NOT NULL, " +
 			"FOREIGN KEY(ingredientID) REFERENCES ingredients(id), " +
 			"FOREIGN KEY(recipeID) REFERENCES recipes(id), " +
 			"PRIMARY KEY(ingredientID, recipeID))"
 
-		createQueries["StepTypeTable"] = "CREATE TABLE stepType (id INTEGER NOT NULL PRIMARY KEY, " +
+		createQueries["stepType"] = "CREATE TABLE stepType (id INTEGER NOT NULL PRIMARY KEY, " +
 			"name TEXT)"
 
-		createQueries["StepTable"] = "CREATE TABLE steps( id INTEGER NOT NULL PRIMARY KEY, " +
+		createQueries["steps"] = "CREATE TABLE steps( id INTEGER NOT NULL PRIMARY KEY, " +
 			"instructions TEXT, time NUM, stepTypeID INTEGER, temperature NUM, tempUnits INTEGER, " +
 			"FOREIGN KEY(stepTypeID) REFERENCES stepType(id), " +
 			"FOREIGN KEY(tempUnits) REFERENCES units(id))"
 
-		createQueries["StepRecTable"] = "CREATE TABLE step_recipe( stepID INTEGER NOT NULL, " +
+		createQueries["step_recipe"] = "CREATE TABLE step_recipe( stepID INTEGER NOT NULL, " +
 			"recipeID INTEGER NOT NULL, " +
 			"FOREIGN KEY(stepID) REFERENCES steps(id), " +
 			"FOREIGN KEY(recipeID) REFERENCES recipes(id), " +
 			"PRIMARY KEY(stepID, recipeID))"
 
-		createQueries["TagTable"] = "CREATE TABLE tags(id INTEGER NOT NULL PRIMARY KEY, name TEXT NOT NULL)"
+		createQueries["tags"] = "CREATE TABLE tags(id INTEGER NOT NULL PRIMARY KEY, name TEXT NOT NULL)"
 
-		createQueries["TagRecTable"] = "CREATE TABLE tag_recipe( tagID INTEGER NOT NULL, recipeID INTEGER NOT NULL, " +
+		createQueries["tag_recipe"] = "CREATE TABLE tag_recipe( tagID INTEGER NOT NULL, recipeID INTEGER NOT NULL, " +
 			"FOREIGN KEY(tagID) REFERENCES tags(id), " +
 			"FOREIGN KEY(recipeID) REFERENCES recipes(id), " +
 			"PRIMARY KEY(tagID, recipeID))"
@@ -154,6 +157,16 @@ func initDB(databasePath string) *sql.DB {
 		createQueries["lastMade"] = "CREATE TABLE lastMade(id INTEGER NOT NULL PRIMARY KEY, " +
 			"recipe INTEGER NOT NULL, dateMade TEXT, notes TEXT, " +
 			"FOREIGN KEY(recipe) REFERENCES recipes(id))"
+
+		createQueries["equipment"] = "CREATE TABLE equipment(id INTEGER NOT NULL PRIMARY KEY, " +
+			"name TEXT, isOwned NUM)"
+
+		createQueries["unitType"] = "CREATE TABLE unitType(id INTEGER NOT NULL PRIMARY KEY, name TEXT)"
+
+		createQueries["unitConversions"] = "CREATE TABLE unitConversions( id INTEGER NOT NULL PRIMARY KEY, " +
+			"fromUnit INTEGER, toUnit INTEGER, multiplicand NUM, denominator NUM, fromOFfset NUM, toOffset NUM, " +
+			"FOREIGN KEY(fromUnit) REFERENCES units(id), " +
+			"FOREIGN KEY(toUnit) REFERENCES units(id))"
 
 		// since not all tables exist, for now drop all tables, then recreate them
 
