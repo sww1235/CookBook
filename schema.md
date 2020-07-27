@@ -121,6 +121,25 @@ stores all units with a standardized PK and a human readable description
 | Description | text             | TEXT              | description of unit        |
 | Symbol      | text             | TEXT              | unit symbol                |
 | isCustom    | bool             | NUM               | is unit custom or standard |
+| unitType    | int (fk)         | INTEGER (fk)      | base type of unit          |
+
+
+## unitType
+
+base unit types
+
+-	time
+-	length
+-	mass
+-	current
+-	temperature
+-	quantity
+-	lum\_intensity
+
+| Column Name | Datatype (mysql) | Datatype (sqlite) | Description          |
+| ----------- | ---------------- | ----------------- | -------------------- |
+| ID          | int (pk)         | INTEGER (pk)      | unique id            |
+| Name        | text             | TEXT              | base type name       |
 
 ## tags
 
@@ -165,9 +184,21 @@ records when a recipe was made. This is marked manually by the chef
 
 ## unitConversions
 
-| Column Name | Datatype (mysql) | Datatype (sqlite) | Description                |
-| ----------- | ---------------- | ----------------- | -------------------------- |
-| ID          | int (pk)         | INTEGER (pk)      | unique id                  |
-| fromUnit    | int (fk)         | INTEGER (fk)      | id of unit being converted |
-| toUnit      | int (fk)         | INTEGER (fk)      | id of unit to convert to   |
-| convFactor  | decimal(12,3)    | NUM               | conversion factor          |
+<https://dba.stackexchange.com/a/62468/185504>
+
+`y = ((x + xOffset) * multiplicand / denominator) + yOffset`
+
+
+| Column Name  | Datatype (mysql) | Datatype (sqlite) | Description                |
+| ------------ | ---------------- | ----------------- | -------------------------- |
+| ID           | int (pk)         | INTEGER (pk)      | unique id                  |
+| fromUnit     | int (fk)         | INTEGER (fk)      | id of unit being converted |
+| toUnit       | int (fk)         | INTEGER (fk)      | id of unit to convert to   |
+| multiplicand | decimal(12,3)    | NUM               | multiplicand               |
+| denominator  | decimal(12,3)    | NUM               | denominator                |
+| fromOffset   | decimal(12,3)    | NUM               | from unit offset           |
+| toOffset     | decimal(12,3)    | NUM               | to unit offset             |
+
+
+
+
