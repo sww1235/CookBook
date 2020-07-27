@@ -114,13 +114,13 @@ stores all units with a standardized PK and a human readable description
 
 <unitsofmeasure.org/ucum.html>
 
-| Column Name  | Datatype (mysql) | Datatype (sqlite) | Description                |
-| ------------ | ---------------- | ----------------- | -------------------------- |
-| ID           | int (pk)         | INTEGER (pk)      | unique ID for unit         |
-| Name         | text             | TEXT              | print name of unit         |
-| Description  | text             | TEXT              | description of unit        |
-| Symbol       | text             | TEXT              | unit symbol                |
-| IsCustomUnit | bool             | NUM               | is unit custom or standard |
+| Column Name | Datatype (mysql) | Datatype (sqlite) | Description                |
+| ----------- | ---------------- | ----------------- | -------------------------- |
+| ID          | int (pk)         | INTEGER (pk)      | unique ID for unit         |
+| Name        | text             | TEXT              | print name of unit         |
+| Description | text             | TEXT              | description of unit        |
+| Symbol      | text             | TEXT              | unit symbol                |
+| isCustom    | bool             | NUM               | is unit custom or standard |
 
 ## tags
 
@@ -156,10 +156,8 @@ records when a recipe was made. This is marked manually by the chef
 
 ## equipment
 
-larger equipment needed to cook recipes
-
 | Column Name | Datatype (mysql) | Datatype (sqlite) | Description        |
 | ----------- | ---------------- | ----------------- | ------------------ |
 | ID          | int (pk)         | INTEGER (pk)      | unique id          |
-| name        | text             | TEXT              | name of equipment  |
+| Name        | text             | TEXT              | name of equipment  | 
 | isOwned     | bool             | NUM               | is equipment owned |
