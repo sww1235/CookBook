@@ -136,22 +136,27 @@ func initialization() error {
 	}
 
 	//Attempt to read config
-	config, cfgErr := readConfig(*flagConfigPath)
+	tempConfig, cfgErr := readConfig(*flagConfigPath)
 	if cfgErr != nil {
 		infoLogger.Printf("config file not openable at path: %s. Err: %s. "+
 			"Using default configuration", *flagConfigPath, cfgErr)
+	} else {
+		config = tempConfig
 	}
 
 	//try flag recipeDatabaseDir
-	if *flagRecipeDatabaseDir != defaultRecipeDatabaseDir {
+	if *flagRecipeDatabaseDir != defaultRecipeDatabaseDir { // flag is present if value isn't default
 		infoLogger.Printf("Using recipeDatabaseDir %s from flag", *flagRecipeDatabaseDir)
 		config.RecipeDatabase = path.Join(*flagRecipeDatabaseDir, "cookbook.db")
-	} else if path.Dir(config.RecipeDatabase) != defaultRecipeDatabaseDir {
+
+		// if config set path to different path than default
+	} else if config.RecipeDatabase != defaultRecipeDatabase {
+		infoLogger.Printf("!! config value: %s, default value: %s", config.RecipeDatabase, defaultRecipeDatabase)
 		infoLogger.Printf("Using recipeDatabaseDir %s from config", path.Dir(config.RecipeDatabase))
 		//config.RecipeDatabase already set
 	} else {
-		infoLogger.Printf("Using default recipeDir %s", defaultRecipeDatabaseDir)
-		config.RecipeDatabase = defaultRecipeDatabase
+		// config.RecipeDatabase already set at line 105
+		infoLogger.Printf("Using default recipe database %s", defaultRecipeDatabase)
 	}
 	return nil
 }

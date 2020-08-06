@@ -94,7 +94,9 @@ func initDB(databasePath string) *sql.DB {
 		}
 	}
 
-	if missingTable {
+	// only needs to happen if some tables are missing, not all.
+	// if all tables are missing, then needsInit is true
+	if missingTable && !needInit {
 		fatalLogger.Panicln("Existing database missing critical table. See log messages above.")
 	}
 
