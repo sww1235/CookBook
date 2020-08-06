@@ -1,4 +1,4 @@
-package recipeDatabase
+package main
 
 import (
 	"fmt"

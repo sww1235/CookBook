@@ -6,7 +6,6 @@ import (
 	"os"
 	"path"
 
-	backend "./recipe-database"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -184,7 +183,7 @@ func initDB(databasePath string) *sql.DB {
 
 }
 
-func insertRecipe(db *sql.DB, recipe backend.Recipe) error {
+func insertRecipe(db *sql.DB, recipe Recipe) error {
 
 	return nil
 }

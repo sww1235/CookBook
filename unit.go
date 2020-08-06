@@ -1,4 +1,4 @@
-package recipeDatabase
+package main
 
 import "fmt"
 
@@ -7,7 +7,7 @@ type Unit struct {
 	Name        string // human readable name of unit
 	Symbol      string // recipe symbol
 	Description string // unit description
-	isCustom    bool   // is unit custom or standard
+	IsCustom    bool   // is unit custom or standard
 
 }
 

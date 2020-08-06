@@ -17,8 +17,6 @@ import (
 	"os"
 	"path"
 	"strconv"
-
-	backend "./recipe-database"
 )
 
 //Configuration stores the configuration that is read in and out from a file
@@ -30,7 +28,7 @@ var httpServerFlagIP string
 
 var config Configuration
 
-var units map[string]backend.Unit
+var units map[string]Unit
 
 var debugLogger = log.New(ioutil.Discard, "DEBUG: ", 0)
 var infoLogger = log.New(os.Stderr, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
@@ -159,9 +157,9 @@ func initialization() error {
 }
 
 //ReadRecipe creates a recipe struct by prompting the user for input
-func ReadRecipe() (backend.Recipe, error) {
+func ReadRecipe() (Recipe, error) {
 
-	var tempRecipe backend.Recipe
+	var tempRecipe Recipe
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Println("Adding new recipe to database. Press Ctrl-C to abort")
 	fmt.Print("Enter recipe Name: ")
@@ -210,7 +208,7 @@ func ReadRecipe() (backend.Recipe, error) {
 //Multiple recipes can be returned from sql query, and so the user is prompted
 //for which one they want.
 func displaySingleRecipe(recipeName string) error {
-	var tempRecipe backend.Recipe
+	var tempRecipe Recipe
 	fmt.Print(tempRecipe.String())
 
 	fmt.Println("Press enter to exit program")
