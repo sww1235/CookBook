@@ -59,7 +59,7 @@ func main() {
 		}
 		//insert it into database
 
-		err = insertRecipe(db, tempRecipe)
+		err = InsertRecipe(db, tempRecipe)
 		if err != nil {
 			fatalLogger.Panicln("Error inserting new recipe into database:", err)
 		}

@@ -176,7 +176,39 @@ func initDB(databasePath string) *sql.DB {
 
 }
 
-func insertRecipe(db *sql.DB, recipe Recipe) error {
+func InsertRecipe(db *sql.DB, recipe Recipe) error {
 
 	return nil
+}
+
+//GetRecipes returns a map of recipe names indexed on their database id
+//
+//Used to populate a list of recipes. Not for getting all attributes of recipes
+func GetRecipes(db *sql.DB) (map[int]string, error) {
+
+	sqlString := "SELECT id, name FROM recipes"
+
+	listRecipes := make(map[int]string)
+
+	debugLogger.Println(sqlString)
+	rows, err := db.Query(sqlString)
+	if err != nil {
+		return listRecipes, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id int
+		var name string
+
+		err = rows.Scan(&id, &name)
+		if err != nil {
+			fatalLogger.Panicln("reading row failed", err)
+		}
+		debugLogger.Printf("Recipe ID: %s, Recipe Name: %s", id, name)
+		// add row values to recipe map
+		listRecipes[id] = name
+	}
+
+	return listRecipes, nil
+
 }
