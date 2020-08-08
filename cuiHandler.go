@@ -10,14 +10,15 @@ var (
 	recipeList        *tview.List
 	tagList           *tview.List
 	recipePreview     *tview.TextView
-	cmdPalette        *tview.Frame
+	cmdPalette        *tview.TextView
 	recipeViewer      *tview.TextView
 	mainFlexContainer *tview.Flex
 )
 
 const (
-	navigation = "Use arrow keys to navigate. Left and right to switch between tags and " +
-		"recipes, and up and down arrows to select either a tag or recipe."
+	navigation = "Use arrow keys to navigate.\n" +
+		"Left and right to switch between tags andrecipes,\n" +
+		"and up and down arrows to select either a tag or recipe."
 	commands = "Ctrl-C: Exit, "
 )
 
@@ -88,14 +89,11 @@ func startCUI() error {
 	recipePreview.SetChangedFunc(func() { app.Draw() })
 	recipePreview.SetBorder(true).SetTitle("Selected Recipe")
 
-	// using box as placeholder inside frame.
-	// we can add text to frame but not box for some reason
-	// frame needs primitive to go around
-	// this comes from the presentation demo cover.go
-	cmdPalette = tview.NewFrame(tview.NewBox())
-	cmdPalette.SetBorders(0, 0, 0, 0, 0, 0)
-	cmdPalette.AddText(navigation, true, tview.AlignCenter, tcell.ColorWhite)
-	cmdPalette.AddText("", true, tview.AlignCenter, tcell.ColorWhite)
+	cmdPalette = tview.NewTextView()
+	cmdPalette.SetScrollable(true).SetTextAlign(tview.AlignCenter).SetTextColor(tcell.ColorWhite)
+	cmdPalette.SetWrap(true).SetWordWrap(true)
+	cmdPalette.SetDynamicColors(true).SetRegions(false).SetChangedFunc(func() { app.Draw() })
+	cmdPalette.SetText(navigation + "\n\n" + commands)
 
 	recipeViewer = tview.NewTextView()
 	// TODO: embed regions and colors when recipes are read from database
