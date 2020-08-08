@@ -18,6 +18,13 @@ const (
 	Other
 )
 
+var stepTypeNames = [...]string{
+	"Prep",
+	"Cook",
+	"Wait",
+	"Other",
+}
+
 type Step struct {
 	TimeNeeded   time.Duration
 	StepType     StepType
@@ -31,4 +38,11 @@ func (s Step) String() string {
 	stringString += s.Instructions + "\n"
 
 	return stringString
+}
+
+func (st StepType) String() string {
+	//this will panic if you try to pass in something not
+	//in the constant array
+	return stepTypeNames[st]
+
 }

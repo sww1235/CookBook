@@ -204,7 +204,7 @@ func GetRecipes(db *sql.DB) (map[int]string, error) {
 		if err != nil {
 			fatalLogger.Panicln("reading row failed", err)
 		}
-		debugLogger.Printf("Recipe ID: %s, Recipe Name: %s", id, name)
+		debugLogger.Printf("Recipe ID: %d, Recipe Name: %s", id, name)
 		// add row values to recipe map
 		listRecipes[id] = name
 	}

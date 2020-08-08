@@ -13,10 +13,10 @@ func (e Equipment) String() string {
 
 	if e.Owned {
 
-		return fmt.Sprintf("Equipment: %s is owned")
+		return fmt.Sprintf("Equipment: %s is owned", e.Name)
 	} else {
 
-		return fmt.Sprintf("Equipment: %s is not owned")
+		return fmt.Sprintf("Equipment: %s is not owned", e.Name)
 
 	}
 }
