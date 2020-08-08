@@ -59,7 +59,7 @@ func main() {
 		}
 		//insert it into database
 
-		err = InsertRecipe(db, tempRecipe)
+		_, err = InsertRecipe(db, tempRecipe) // don't need recipe id in this case
 		if err != nil {
 			fatalLogger.Panicln("Error inserting new recipe into database:", err)
 		}
@@ -196,7 +196,7 @@ func ReadRecipe() (Recipe, error) {
 
 		if ok {
 
-			tempRecipe.QuantityMadeUnits = tempUnit
+			tempRecipe.QuantityMadeUnit = tempUnit
 			break
 		}
 	}

@@ -4,24 +4,24 @@ want to have separate ingredient and inventory tables as they can have different
 names or purchase quantities. IE, ingredient would be 1lb flour and inventory
 would be 5lb bag flour, potentially with a partial remaining quantity.
 
-## recipe
+## recipes
 
 store information about a specific recipe. Multiple versions of a recipe are allowed
 
-| Column Name       | Datatype (mysql) | Datatyle (sqlite) | Description                                               |
-| ----------------- | ---------------- | ----------------- | --------------------------------------------------------- |
-| ID                | int (pk)         | INTEGER (pk)      | unique ID for each recipe                                 |
-| Name              | text             | TEXT              | Name of recipe                                            |
-| Description       | text             | TEXT              | Short Description of recipe.                              |
-| Comments          | text             | TEXT              | comments on recipe or history of recipe                   |
-| Source            | text             | TEXT              | source of recipe, include URL or other info               |
-| Author            | text             | TEXT              | name of original creator of specific recipe (if known)    |
-| QuantityMade      | decimal(7,2)     | NUM               | a specific quantity that this recipe makes.               |
-| QuantityMadeUnits | int (fk)         | INTEGER (fk)      | unit of measure for QuantityMade                          |
-| initialVersion    | int (fk)         | INTEGER (fk)      | original version of recipe for revisions. null if no revs |
-| version           | int              | INTEGER           | revision number of recipe                                 |
+| Column Name       | Datatype (mysql) | Datatyle (sqlite) | Description                                            |
+| ----------------- | ---------------- | ----------------- | ------------------------------------------------------ |
+| ID                | int (pk)         | INTEGER (pk)      | unique ID for each recipe                              |
+| Name              | text             | TEXT              | Name of recipe                                         |
+| Description       | text             | TEXT              | Short Description of recipe.                           |
+| Comments          | text             | TEXT              | comments on recipe or history of recipe                |
+| Source            | text             | TEXT              | source of recipe, include URL or other info            |
+| Author            | text             | TEXT              | name of original creator of specific recipe (if known) |
+| Quantity          | decimal(7,2)     | NUM               | a specific quantity that this recipe makes.            |
+| QuantityMadeUnits | int (fk)         | INTEGER (fk)      | unit of measure for QuantityMade                       |
+| initialVersion    | int (fk)         | INTEGER (fk)      | id of initial version of recipe. null if no revs       |
+| version           | int              | INTEGER           | revision number of recipe                              |
 
-## ingredient
+## ingredients
 
 stores ingredients as used in recipes.
 
@@ -29,7 +29,6 @@ stores ingredients as used in recipes.
 | ------------- | ---------------- | ----------------- | ------------------------------------------ |
 | ID            | int (pk)         | INTEGER (pk)      | unique ID for each ingredient              |
 | Name          | VARCHAR          | TEXT              | name of ingredient                         |
-| InventoryID   | integer (fk)     | INTEGER (fk)      | ingredient to its precursor inventory item |
 | Quantity      | decimal(7,2)     | NUM               | quantity of ingredient used in recipe      |
 | QuantityUnits | int (fk)         | INTEGER (fk)      | units of ingredient used in recipe         |
 
@@ -56,7 +55,7 @@ maps ingredients or sub recipes to recipes
 
 
 
-## step
+## steps
 
 TODO: Somehow figure out how to reference specific ingredients in a step.
 Probably done using encoding in the step instructions field of the IngredientID
@@ -98,15 +97,14 @@ has composite primary key
 
 ## inventory
 
-| Column Name     | Datatype (mysql) | Datatype (sqlite) | Description                     |
-| --------------- | ---------------- | ----------------- | ------------------------------- |
-| ID              | int (pk          | INTEGER (pk)      | unique ID for inventory item    |
-| EAN             | char(14)         | TEXT              | barcode data                    |
-| Name            | text             | TEXT              | short name of inventory item    |
-| Description     | text             | TEXT              | description of inventory item   |
-| storedQty       | decimal(7,2)     | NUM               | quantity of item in inventory   |
-| PackageQty      | decimal(7        | NUM               | quantity of item in package     |
-| PackageQtyUnits | int (fk          | INTEGER (fk)      | fk for referencing unit table   |
+| Column Name  | Datatype (mysql) | Datatype (sqlite) | Description                   |
+| ------------ | ---------------- | ----------------- | ----------------------------- |
+| ID           | int (pk)         | INTEGER (pk)      | unique ID for inventory item  |
+| EAN          | char(14)         | TEXT              | barcode data                  |
+| Name         | text             | TEXT              | short name of inventory item  |
+| Description  | text             | TEXT              | description of inventory item |
+| Quantity     | decimal(7,2)     | NUM               | quantity of item in inventory |
+| QuantityUnit | int (fk)         | INTEGER (fk)      | fk for referencing unit table |
 
 ## units
 
@@ -114,14 +112,15 @@ stores all units with a standardized PK and a human readable description
 
 <unitsofmeasure.org/ucum.html>
 
-| Column Name | Datatype (mysql) | Datatype (sqlite) | Description                |
-| ----------- | ---------------- | ----------------- | -------------------------- |
-| ID          | int (pk)         | INTEGER (pk)      | unique ID for unit         |
-| Name        | text             | TEXT              | print name of unit         |
-| Description | text             | TEXT              | description of unit        |
-| Symbol      | text             | TEXT              | unit symbol                |
-| isCustom    | bool             | NUM               | is unit custom or standard |
-| unitType    | int (fk)         | INTEGER (fk)      | base type of unit          |
+| Column Name   | Datatype (mysql) | Datatype (sqlite) | Description                                   |
+| ------------- | ---------------- | ----------------- | --------------------------------------------- |
+| ID            | int (pk)         | INTEGER (pk)      | unique ID for unit                            |
+| Name          | text             | TEXT              | print name of unit                            |
+| Description   | text             | TEXT              | description of unit                           |
+| Symbol        | text             | TEXT              | unit symbol                                   |
+| isCustom      | bool             | INTEGER           | is unit custom or standard                    |
+| refIngredient | int (fk)         | INGEGER (fk)      | fk of ingredient for ingredient specific unit |
+| unitType      | int (fk)         | INTEGER (fk)      | base type of unit                             |
 
 
 ## unitType
@@ -181,13 +180,24 @@ records when a recipe was made. This is marked manually by the chef
 | Name        | text             | TEXT              | name of equipment  |
 | isOwned     | bool             | NUM               | is equipment owned |
 
+## equipment\_recipe
+
+has composite primary key
+
+maps equipment to recipes
+
+| Column Name | Datatype (mysql) | Datatype (sqlite) | Description             |
+| ----------- | ---------------- | ----------------- | ----------------------- |
+| equipmentID | int (pk, fk)     | INTEGER (pk, fk)  | unique ID for equipment |
+| recipeID    | int (pk, fk)     | INTEGER (pk, fk)  | unique ID for recipe    |
+
+
 
 ## unitConversions
 
 <https://dba.stackexchange.com/a/62468/185504>
 
-`y = ((x + xOffset) * multiplicand / denominator) + yOffset`
-
+`toUnitValue = ((fromUnitOffset + fromOffset) * multiplicand / denominator) + toOffset`
 
 | Column Name  | Datatype (mysql) | Datatype (sqlite) | Description                |
 | ------------ | ---------------- | ----------------- | -------------------------- |

@@ -9,27 +9,29 @@ import (
 
 //A Recipe struct is the internal representation of a recipe from a database
 type Recipe struct {
-	ID                int          // id of recipe in database
-	Name              string       // name of recipe
-	Description       string       // description of recipe
-	Comments          string       // recipe comments
-	Source            string       // source of recipe
-	Author            string       // author of recipe
-	Ingredients       []Ingredient // ingredients of recipe
-	QuantityMade      int          // how much of unit recipe makes
-	QuantityMadeUnits Unit         // unit of recipe
-	Steps             []Step       // steps of recipe
-	EquipmentNeeded   []Equipment  // equipment needed to make recipe
-	Tags              []string     // recipe tags
+	ID               int          // id of recipe in database, -1 if recipe doesn't exist in db
+	Name             string       // name of recipe
+	Description      string       // description of recipe
+	Comments         string       // recipe comments
+	Source           string       // source of recipe
+	Author           string       // author of recipe
+	Ingredients      []Ingredient // ingredients of recipe
+	QuantityMade     int          // how much of unit recipe makes
+	QuantityMadeUnit Unit         // unit of recipe
+	Steps            []Step       // steps of recipe
+	EquipmentNeeded  []Equipment  // equipment needed to make recipe
+	Tags             []Tag        // recipe tags
+	Version          int          // version of recipe
+	InitialVersion   int          // id of initial version of recipe
 }
 
 func (r Recipe) String() string {
 	stringString := ""
 	stringString += fmt.Sprintf("%s \n\n ", r.Name)
 	if r.QuantityMade > 1 {
-		stringString += fmt.Sprintf("Makes %d %s's\n", r.QuantityMade, r.QuantityMadeUnits)
+		stringString += fmt.Sprintf("Makes %d %s's\n", r.QuantityMade, r.QuantityMadeUnit)
 	} else if r.QuantityMade == 1 {
-		stringString += fmt.Sprintf("Makes %d %s\n", r.QuantityMade, r.QuantityMadeUnits)
+		stringString += fmt.Sprintf("Makes %d %s\n", r.QuantityMade, r.QuantityMadeUnit)
 	} else {
 		stringString += "Makes nothing, good job cookie\n"
 	}
@@ -69,7 +71,7 @@ func (r Recipe) String() string {
 	}
 	stringString += "Tags: \n"
 	for _, tag := range r.Tags {
-		stringString += tag
+		stringString += tag.String()
 	}
 
 	stringString += "\n\n"

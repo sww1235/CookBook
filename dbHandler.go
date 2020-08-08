@@ -52,16 +52,16 @@ func initDB(databasePath string) *sql.DB {
 		"tag_recipe":           false,
 		"lastMade":             false,
 		"equipment":            false,
+		"equipment_recipe":     false,
 		"unitType":             false,
 		"unitConversions":      false,
 	}
 
 	for table := range requiredTables {
-		sqlStatement := fmt.Sprintf("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='%s'", table)
-		debugLogger.Println(sqlStatement)
+		sqlStatement := "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name=?"
 
 		var rowCount int
-		err := db.QueryRow(sqlStatement).Scan(&rowCount)
+		err := db.QueryRow(sqlStatement, table).Scan(&rowCount)
 		if err != nil {
 			fatalLogger.Panicln("could not check if table exists", err)
 		}
@@ -81,22 +81,40 @@ func initDB(databasePath string) *sql.DB {
 		// missingTable will be true if any of the tables are missing
 		missingTable = missing || missingTable
 		if missing {
-			infoLogger.Printf("Table %s missing. Manually create this table, or delete database so it can be recreated.", table)
+			infoLogger.Printf("Table %s missing.", table)
 		}
 	}
 
 	// only needs to happen if some tables are missing, not all.
 	// if all tables are missing, then needsInit is true
 	if missingTable && !needInit {
-		fatalLogger.Panicln("Existing database missing critical table. See log messages above.")
+		fatalLogger.Panicln("Existing database missing at least one critical table. See log messages above." +
+			"Either delete database so it can be recreated automatically, or manually create the missing tables")
 	}
 
 	if needInit {
 		// need to create tables
 		// using map to allow for easier iteration
 		createQueries := make(map[string]string)
+
+		// id column will automap to rowID autocreated by sqlite with "INTEGER PRIMARY KEY" spec.
+
+		createQueries["equipment"] = "CREATE TABLE equipment(id INTEGER NOT NULL PRIMARY KEY, " +
+			"name TEXT, isOwned NUM)"
+
+		createQueries["unitType"] = "CREATE TABLE unitType(id INTEGER NOT NULL PRIMARY KEY, name TEXT)"
+
+		createQueries["tags"] = "CREATE TABLE tags(id INTEGER NOT NULL PRIMARY KEY, name TEXT NOT NULL, " +
+			"description TEXT)"
+
+		createQueries["stepType"] = "CREATE TABLE stepType (id INTEGER NOT NULL PRIMARY KEY, " +
+			"name TEXT)"
+
 		createQueries["units"] = "CREATE TABLE units(id INTEGER NOT NULL PRIMARY KEY, " +
-			"name TEXT, description TEXT)"
+			"name TEXT, description TEXT, symbol TEXT, isCustom INTEGER, " +
+			"refIngredient INTEGER, unitType INTEGER, " +
+			"FOREIGN KEY (refIngredient) REFERENCES ingredients(id), " +
+			"FOREIGN KEY (unitType) REFERENCES unitType(id))"
 
 		createQueries["recipes"] = "CREATE TABLE recipes (id INTEGER NOT NULL PRIMARY KEY, " +
 			"name TEXT, description TEXT, comments TEXT, source TEXT, author TEXT, " +
@@ -105,12 +123,11 @@ func initDB(databasePath string) *sql.DB {
 			"FOREIGN KEY(initialVersion) REFERENCES recipes(id))"
 
 		createQueries["inventory"] = "CREATE TABLE inventory (id INTEGER NOT NULL PRIMARY KEY, " +
-			"EAN TEXT UNIQUE, name TEXT, description TEXT, quantity NUM, packageQuantity NUM, " +
-			"packageQuantityUnits INTEGER, FOREIGN KEY(packageQuantityUnits) REFERENCES units(id))"
+			"EAN TEXT UNIQUE, name TEXT, description TEXT, quantity NUM, " +
+			"QuantityUnits INTEGER, FOREIGN KEY(QuantityUnits) REFERENCES units(id))"
 
 		createQueries["ingredients"] = "CREATE TABLE ingredients (id INTEGER NOT NULL PRIMARY KEY, " +
-			"name TEXT, quantity NUM, quantityUnits INTEGER, inventoryID INTEGER, " +
-			"FOREIGN KEY(inventoryID) REFERENCES inventory(id), " +
+			"name TEXT, quantity NUM, quantityUnits INTEGER, " +
 			"FOREIGN KEY(quantityUnits) REFERENCES units(id))"
 
 		createQueries["ingredient_inventory"] = "CREATE TABLE ingredient_inventory( " +
@@ -125,9 +142,6 @@ func initDB(databasePath string) *sql.DB {
 			"FOREIGN KEY(recipeID) REFERENCES recipes(id), " +
 			"PRIMARY KEY(ingredientID, recipeID))"
 
-		createQueries["stepType"] = "CREATE TABLE stepType (id INTEGER NOT NULL PRIMARY KEY, " +
-			"name TEXT)"
-
 		createQueries["steps"] = "CREATE TABLE steps( id INTEGER NOT NULL PRIMARY KEY, " +
 			"instructions TEXT, time NUM, stepTypeID INTEGER, temperature NUM, tempUnits INTEGER, " +
 			"FOREIGN KEY(stepTypeID) REFERENCES stepType(id), " +
@@ -139,21 +153,20 @@ func initDB(databasePath string) *sql.DB {
 			"FOREIGN KEY(recipeID) REFERENCES recipes(id), " +
 			"PRIMARY KEY(stepID, recipeID))"
 
-		createQueries["tags"] = "CREATE TABLE tags(id INTEGER NOT NULL PRIMARY KEY, name TEXT NOT NULL)"
-
 		createQueries["tag_recipe"] = "CREATE TABLE tag_recipe( tagID INTEGER NOT NULL, recipeID INTEGER NOT NULL, " +
 			"FOREIGN KEY(tagID) REFERENCES tags(id), " +
 			"FOREIGN KEY(recipeID) REFERENCES recipes(id), " +
 			"PRIMARY KEY(tagID, recipeID))"
 
+		createQueries["equipment_recipe"] = "CREATE TABLE equipment_recipe( equipmentID INTEGER NOT NULL, " +
+			"recipeID INTEGER NOT NULL, " +
+			"FOREIGN KEY(equipmentID) REFERENCES equipment(id), " +
+			"FOREIGN KEY(recipeID) REFERENCES recipes(id), " +
+			"PRIMARY KEY(equipmentID, recipeID))"
+
 		createQueries["lastMade"] = "CREATE TABLE lastMade(id INTEGER NOT NULL PRIMARY KEY, " +
 			"recipe INTEGER NOT NULL, dateMade TEXT, notes TEXT, " +
 			"FOREIGN KEY(recipe) REFERENCES recipes(id))"
-
-		createQueries["equipment"] = "CREATE TABLE equipment(id INTEGER NOT NULL PRIMARY KEY, " +
-			"name TEXT, isOwned NUM)"
-
-		createQueries["unitType"] = "CREATE TABLE unitType(id INTEGER NOT NULL PRIMARY KEY, name TEXT)"
 
 		createQueries["unitConversions"] = "CREATE TABLE unitConversions( id INTEGER NOT NULL PRIMARY KEY, " +
 			"fromUnit INTEGER, toUnit INTEGER, multiplicand NUM, denominator NUM, fromOFfset NUM, toOffset NUM, " +
@@ -176,14 +189,134 @@ func initDB(databasePath string) *sql.DB {
 
 }
 
-func InsertRecipe(db *sql.DB, recipe Recipe) error {
+// InsertRecipe takes a Recipe struct and inserts its contents into the appropriate tables
+// in the database
+// When using this function, Recipe struct should have all fields filled out, including
+// sub structs such as ingredients and steps.
+func InsertRecipe(db *sql.DB, r Recipe) (int, error) {
 
-	return nil
+	// TODO: switch from db.Exec to transactions that are chained through all insert/update functions
+	// need to insert recipe first, so steps can be linked to appropriate ID
+	insertSQL := "INSERT INTO recipes (name, description, comments, source, author, quantity, " +
+		"quantityUnits, initialVersion, version) " +
+		"VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)"
+
+	// if recipe already exists in database
+	if r.ID != -1 {
+		return -1, fmt.Errorf("Recipe %s already exists in database, cannot insert duplicate", r)
+	}
+
+	result, err := db.Exec(insertSQL, r.Name, r.Description, r.Comments, r.Source, r.Author,
+		r.QuantityMade, r.QuantityMadeUnit, r.InitialVersion, r.Version)
+
+	if err != nil {
+		return -1, err
+	}
+
+	recipeID, err := result.LastInsertId()
+
+	if err != nil {
+		return -1, err
+	}
+
+	for _, ing := range r.Ingredients {
+		// ingredient_recipe mapping is done in InsertIngredient
+		_, err := InsertIngredient(db, ing, r, ing.InventoryReference.ID)
+
+		if err != nil {
+			return -1, err
+		}
+	}
+
+	//TODO: add steps, equipment, and tags
+
+	return int(recipeID), err
 }
 
-//GetRecipes returns a map of recipe names indexed on their database id
+func UpdateRecipe(db *sql.DB, r Recipe) (int, error) {
+
+	// don't need to update initialVersion
+	updateSQL := "UPDATE recipes SET name = ?, description = ?, comments = ?, source = ?, author = ?, " +
+		"quantity = ?, quantityUnits = ?, version = ? " +
+		"WHERE id = ?"
+
+	// if recipe does not exist in database
+	if r.ID == -1 {
+		return -1, fmt.Errorf("Cannot update recipe %s, it does not exist", r)
+	}
+
+	_, err := db.Exec(updateSQL, r.Name, r.Description, r.Comments, r.Source, r.Author,
+		r.QuantityMade, r.QuantityMadeUnit, r.Version, r.ID)
+
+	return r.ID, err
+
+}
+
+// InsertIngredient takes an Ingredient struct and inserts its contents into the appropriate tables
+// in the database
+func InsertIngredient(db *sql.DB, ing Ingredient, r Recipe, invUnitID int) (int, error) {
+
+	insertSQL := "INSERT INTO ingredients (name, quantity, quantityUnits) " +
+		"VALUES(?, ?, ?)"
+
+	mapRecSQL := "INSERT INTO ingredient_recipe (recipeID, ingredientID) VALUES (?, ?)"
+
+	mapInvSQL := "INSERT INTO ingredient_inventory (ingredientID, inventoryID) VALUES (?, ?)"
+
+	// if ingredient already exists in database
+	if ing.ID != -1 {
+		return -1, fmt.Errorf("Ingredient %s already exists in database", ing)
+	}
+
+	result, err := db.Exec(insertSQL, ing.Name, ing.QuantityUsed, ing.QuantityUnit.ID)
+
+	if err != nil {
+		return -1, err
+	}
+
+	ingredientID, err := result.LastInsertId()
+
+	if err != nil {
+		return -1, err
+	}
+
+	_, err = db.Exec(mapRecSQL, r.ID, ingredientID)
+
+	if err != nil {
+		return -1, err
+	}
+
+	_, err = db.Exec(mapInvSQL, ingredientID, invUnitID)
+
+	if err != nil {
+		return -1, err
+	}
+
+	return int(ingredientID), err
+
+}
+
+func UpdateIngredient(db *sql.DB, ing Ingredient, invUnitID int) (int, error) {
+
+	updateIngredientSQL := "UPDATE ingredients SET name = ?, quantity = ?, quantityUnits = ? " +
+		"WHERE id = ?"
+
+	// if ingredient doesn't exist in database
+	if ing.ID == -1 {
+		return -1, fmt.Errorf("Ingredient %s doesn't exist in database, can't update it", ing)
+
+	}
+
+	_, err := db.Exec(updateIngredientSQL, ing.Name, ing.QuantityUsed, ing.QuantityUnit.ID, ing.ID)
+
+	//TODO: need to delete and remap ingredient_inventory
+
+	return ing.ID, err
+}
+
+// GetRecipes returns a map of recipe names indexed on their database id
 //
-//Used to populate a list of recipes. Not for getting all attributes of recipes
+// Used to populate a list of recipes. Not for getting all attributes of recipes
 func GetRecipes(db *sql.DB) (map[int]string, error) {
 
 	sqlString := "SELECT id, name FROM recipes"
