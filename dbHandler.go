@@ -59,23 +59,14 @@ func initDB(databasePath string) *sql.DB {
 	for table := range requiredTables {
 		sqlStatement := fmt.Sprintf("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='%s'", table)
 		debugLogger.Println(sqlStatement)
-		rows, err := db.Query(sqlStatement)
+
+		var rowCount int
+		err := db.QueryRow(sqlStatement).Scan(&rowCount)
 		if err != nil {
 			fatalLogger.Panicln("could not check if table exists", err)
 		}
-		var rowCount int
-		for rows.Next() {
 
-			var count int
-			err = rows.Scan(&count)
-			if err != nil {
-				fatalLogger.Panicln("reading row count failed", err)
-			}
-			debugLogger.Println(count)
-			rowCount = count
-		}
-
-		rows.Close()
+		debugLogger.Println(rowCount)
 
 		if rowCount == 0 {
 			requiredTables[table] = true
