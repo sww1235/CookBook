@@ -189,10 +189,13 @@ func initDB(databasePath string) *sql.DB {
 
 }
 
-// InsertRecipe takes a Recipe struct and inserts its contents into the appropriate tables
-// in the database
+// InsertRecipe takes a Recipe struct of a recipe that doesn't exist in the database
+// and inserts its contents into the appropriate tables in the database
+//
 // When using this function, Recipe struct should have all fields filled out, including
 // sub structs such as ingredients and steps.
+//
+// Returns id of new recipe in database, and any associated errors
 func InsertRecipe(db *sql.DB, r Recipe) (int, error) {
 
 	// TODO: switch from db.Exec to transactions that are chained through all insert/update functions
@@ -233,6 +236,13 @@ func InsertRecipe(db *sql.DB, r Recipe) (int, error) {
 	return int(recipeID), err
 }
 
+// UpdateRecipe takes a Recipe struct that exists in the database, and updates all fields
+// to be the same as in the passed in Recipe struct.
+//
+// When using this function, Recipe struct should have all fields filled out, including
+// sub structs such as ingredients and steps.
+//
+// Returns id of updated recipe in database, and any associated errors
 func UpdateRecipe(db *sql.DB, r Recipe) (int, error) {
 
 	// don't need to update initialVersion
@@ -255,6 +265,68 @@ func UpdateRecipe(db *sql.DB, r Recipe) (int, error) {
 // InsertIngredient takes an Ingredient struct and inserts its contents into the appropriate tables
 // in the database
 func InsertIngredient(db *sql.DB, ing Ingredient, r Recipe, invUnitID int) (int, error) {
+
+	insertSQL := "INSERT INTO ingredients (name, quantity, quantityUnits) " +
+		"VALUES(?, ?, ?)"
+
+	mapRecSQL := "INSERT INTO ingredient_recipe (recipeID, ingredientID) VALUES (?, ?)"
+
+	mapInvSQL := "INSERT INTO ingredient_inventory (ingredientID, inventoryID) VALUES (?, ?)"
+
+	// if ingredient already exists in database
+	if ing.ID != -1 {
+		return -1, fmt.Errorf("Ingredient %s already exists in database", ing)
+	}
+
+	result, err := db.Exec(insertSQL, ing.Name, ing.QuantityUsed, ing.QuantityUnit.ID)
+
+	if err != nil {
+		return -1, err
+	}
+
+	ingredientID, err := result.LastInsertId()
+
+	if err != nil {
+		return -1, err
+	}
+
+	_, err = db.Exec(mapRecSQL, r.ID, ingredientID)
+
+	if err != nil {
+		return -1, err
+	}
+
+	_, err = db.Exec(mapInvSQL, ingredientID, invUnitID)
+
+	if err != nil {
+		return -1, err
+	}
+
+	return int(ingredientID), err
+
+}
+
+func UpdateIngredient(db *sql.DB, ing Ingredient, invUnitID int) (int, error) {
+
+	updateIngredientSQL := "UPDATE ingredients SET name = ?, quantity = ?, quantityUnits = ? " +
+		"WHERE id = ?"
+
+	// if ingredient doesn't exist in database
+	if ing.ID == -1 {
+		return -1, fmt.Errorf("Ingredient %s doesn't exist in database, can't update it", ing)
+
+	}
+
+	_, err := db.Exec(updateIngredientSQL, ing.Name, ing.QuantityUsed, ing.QuantityUnit.ID, ing.ID)
+
+	//TODO: need to delete and remap ingredient_inventory
+
+	return ing.ID, err
+}
+
+// InsertStep takes an Step struct and inserts its contents into the appropriate tables
+// in the database
+func InsertStep(db *sql.DB, ing Step, r Recipe) (int, error) {
 
 	insertSQL := "INSERT INTO ingredients (name, quantity, quantityUnits) " +
 		"VALUES(?, ?, ?)"
