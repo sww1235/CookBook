@@ -60,14 +60,14 @@ maps ingredients or sub recipes to recipes
 TODO: Somehow figure out how to reference specific ingredients in a step.
 Probably done using encoding in the step instructions field of the IngredientID
 
-| Column Name      | Datatype (mysql) | Datatype (sqlite) | Description                                        |
-| ---------------- | ---------------- | ----------------- | -------------------------------------------------- |
-| ID               | integer (pk)     | INTEGER (pk)      | unique ID for step                                 |
-| Instructions     | text             | TEXT              | instructions for step                              |
-| Time             | decimal(7,2)     | NUM               | stores time of step in seconds.                    |
-| StepTypeID       | int (fk)         | INTEGER (fk)      | foreign key mapping to step type description table |
-| temperature      | int              | INTEGER           | cooking temperature of step                        |
-| temperatureUnits | int (fk)         | INTEGER (fk)      | mapping to units table                             |
+| Column Name  | Datatype (mysql) | Datatype (sqlite) | Description                                        |
+| ------------ | ---------------- | ----------------- | -------------------------------------------------- |
+| ID           | integer (pk)     | INTEGER (pk)      | unique ID for step                                 |
+| Instructions | text             | TEXT              | instructions for step                              |
+| Time         | decimal(7,2)     | NUM               | stores time of step in seconds.                    |
+| StepType     | int (fk)         | INTEGER (fk)      | foreign key mapping to step type description table |
+| temperature  | int              | INTEGER           | cooking temperature of step                        |
+| tempUnit     | int (fk)         | INTEGER (fk)      | mapping to units table                             |
 
 
 ## stepType

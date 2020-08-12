@@ -143,7 +143,7 @@ func initDB(databasePath string) *sql.DB {
 			"PRIMARY KEY(ingredientID, recipeID))"
 
 		createQueries["steps"] = "CREATE TABLE steps( id INTEGER NOT NULL PRIMARY KEY, " +
-			"instructions TEXT, time NUM, stepTypeID INTEGER, temperature NUM, tempUnits INTEGER, " +
+			"instructions TEXT, time NUM, stepType INTEGER, temperature NUM, tempUnit INTEGER, " +
 			"FOREIGN KEY(stepTypeID) REFERENCES stepType(id), " +
 			"FOREIGN KEY(tempUnits) REFERENCES units(id))"
 
@@ -192,7 +192,7 @@ func initDB(databasePath string) *sql.DB {
 // InsertRecipe takes a Recipe struct of a recipe that doesn't exist in the database
 // and inserts its contents into the appropriate tables in the database
 //
-// When using this function, Recipe struct should have all fields filled out, including
+// When using this function, the Recipe struct should have all fields filled out, including
 // sub structs such as ingredients and steps.
 //
 // Returns id of new recipe in database, and any associated errors
@@ -239,7 +239,7 @@ func InsertRecipe(db *sql.DB, r Recipe) (int, error) {
 // UpdateRecipe takes a Recipe struct that exists in the database, and updates all fields
 // to be the same as in the passed in Recipe struct.
 //
-// When using this function, Recipe struct should have all fields filled out, including
+// When using this function, the Recipe struct should have all fields filled out, including
 // sub structs such as ingredients and steps.
 //
 // Returns id of updated recipe in database, and any associated errors
@@ -262,8 +262,12 @@ func UpdateRecipe(db *sql.DB, r Recipe) (int, error) {
 
 }
 
-// InsertIngredient takes an Ingredient struct and inserts its contents into the appropriate tables
-// in the database
+// InsertIngredient takes an Ingredient struct of an ingredient that doesn't exist in the database
+// and inserts its contents into the appropriate tables in the database.
+//
+// When using this function, the Ingredient struct should have all fields filled out.
+//
+// Returns id of inserted ingredient in database, and any associated errors
 func InsertIngredient(db *sql.DB, ing Ingredient, r Recipe, invUnitID int) (int, error) {
 
 	insertSQL := "INSERT INTO ingredients (name, quantity, quantityUnits) " +
@@ -306,6 +310,12 @@ func InsertIngredient(db *sql.DB, ing Ingredient, r Recipe, invUnitID int) (int,
 
 }
 
+// UpdateIngredient takes an Ingredient struct of an ingredient that exists in the database
+// and updates the database with the values in the struct.
+//
+// When using this function, the Ingredient struct should have all fields filled out.
+//
+// Returns id of updated ingredient in database, and any associated errors
 func UpdateIngredient(db *sql.DB, ing Ingredient, invUnitID int) (int, error) {
 
 	updateIngredientSQL := "UPDATE ingredients SET name = ?, quantity = ?, quantityUnits = ? " +
@@ -324,66 +334,70 @@ func UpdateIngredient(db *sql.DB, ing Ingredient, invUnitID int) (int, error) {
 	return ing.ID, err
 }
 
-// InsertStep takes an Step struct and inserts its contents into the appropriate tables
-// in the database
-func InsertStep(db *sql.DB, ing Step, r Recipe) (int, error) {
+// InsertStep takes an Step struct of a step that does not exist in the database
+// and inserts its contents into the appropriate tables in the database
+//
+// When using this function, the Step struct must have all fields filled out except for temperature and tempUnit.
+//
+// Returns id of inserted step in database, and any associated errors.
+func InsertStep(db *sql.DB, stp Step, r Recipe) (int, error) {
 
-	insertSQL := "INSERT INTO ingredients (name, quantity, quantityUnits) " +
-		"VALUES(?, ?, ?)"
+	insertSQL := "INSERT INTO steps (instructions, time, stepType, temperature, tempUnit) " +
+		"VALUES(?, ?, ?, ?, ?)"
 
-	mapRecSQL := "INSERT INTO ingredient_recipe (recipeID, ingredientID) VALUES (?, ?)"
-
-	mapInvSQL := "INSERT INTO ingredient_inventory (ingredientID, inventoryID) VALUES (?, ?)"
+	mapSQL := "INSERT INTO step_recipe (recipeID, stepID) VALUES (?, ?)"
 
 	// if ingredient already exists in database
-	if ing.ID != -1 {
-		return -1, fmt.Errorf("Ingredient %s already exists in database", ing)
+	if stp.ID != -1 {
+		return -1, fmt.Errorf("Step %s already exists in database", stp)
 	}
 
-	result, err := db.Exec(insertSQL, ing.Name, ing.QuantityUsed, ing.QuantityUnit.ID)
+	result, err := db.Exec(insertSQL, stp.Instructions, stp.TimeNeeded, stp.StepType,
+		stp.Temperature.Value, stp.Temperature.Unit.ID)
 
 	if err != nil {
 		return -1, err
 	}
 
-	ingredientID, err := result.LastInsertId()
+	stepID, err := result.LastInsertId()
 
 	if err != nil {
 		return -1, err
 	}
 
-	_, err = db.Exec(mapRecSQL, r.ID, ingredientID)
+	_, err = db.Exec(mapSQL, r.ID, stepID)
 
 	if err != nil {
 		return -1, err
 	}
 
-	_, err = db.Exec(mapInvSQL, ingredientID, invUnitID)
-
-	if err != nil {
-		return -1, err
-	}
-
-	return int(ingredientID), err
+	return int(stepID), err
 
 }
 
-func UpdateIngredient(db *sql.DB, ing Ingredient, invUnitID int) (int, error) {
+// InsertStep takes an Step struct of a step that does not exist in the database
+// and inserts its contents into the appropriate tables in the database
+//
+// When using this function, the Step struct must have all fields filled out except for temperature and tempUnit.
+//
+// Returns id of inserted step in database, and any associated errors.
+func UpdateStep(db *sql.DB, stp Step) (int, error) {
 
-	updateIngredientSQL := "UPDATE ingredients SET name = ?, quantity = ?, quantityUnits = ? " +
-		"WHERE id = ?"
+	updateSQL := "UPDATE steps SET instructions = ?, time = ?, stepType = ? " +
+		"temperature = ?, tempUnit = ? WHERE id = ?"
 
 	// if ingredient doesn't exist in database
-	if ing.ID == -1 {
-		return -1, fmt.Errorf("Ingredient %s doesn't exist in database, can't update it", ing)
+	if stp.ID == -1 {
+		return -1, fmt.Errorf("Step %s doesn't exist in database, can't update it", stp)
 
 	}
 
-	_, err := db.Exec(updateIngredientSQL, ing.Name, ing.QuantityUsed, ing.QuantityUnit.ID, ing.ID)
+	_, err := db.Exec(updateSQL, stp.Instructions, stp.TimeNeeded, stp.StepType,
+		stp.Temperature.Value, stp.Temperature.Unit.ID, stp.ID)
 
 	//TODO: need to delete and remap ingredient_inventory
 
-	return ing.ID, err
+	return stp.ID, err
 }
 
 // GetRecipes returns a map of recipe names indexed on their database id
@@ -415,5 +429,37 @@ func GetRecipes(db *sql.DB) (map[int]string, error) {
 	}
 
 	return listRecipes, nil
+
+}
+
+// GetTags returns a map of tag names indexed on their database id
+//
+// Used to populate a list of tags. Not for getting all attributes of tags
+func GetTags(db *sql.DB) (map[int]string, error) {
+
+	sqlString := "SELECT id, name FROM tags"
+
+	listTags := make(map[int]string)
+
+	debugLogger.Println(sqlString)
+	rows, err := db.Query(sqlString)
+	if err != nil {
+		return listTags, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id int
+		var name string
+
+		err = rows.Scan(&id, &name)
+		if err != nil {
+			fatalLogger.Panicln("reading row failed", err)
+		}
+		debugLogger.Printf("Tag ID: %d, Tag Name: %s", id, name)
+		// add row values to recipe map
+		listTags[id] = name
+	}
+
+	return listTags, nil
 
 }
