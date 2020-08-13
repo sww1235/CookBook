@@ -69,7 +69,7 @@ func main() {
 			fatalLogger.Panicln("Something went wrong with the HTTP server", err)
 		}
 	} else {
-		err := startCUI()
+		err := startCUI(db)
 		if err != nil {
 			fatalLogger.Panicln("Something went wrong with the CUI", err)
 		}

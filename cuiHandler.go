@@ -1,6 +1,8 @@
 package main
 
 import (
+	"database/sql"
+
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
 )
@@ -13,6 +15,7 @@ var (
 	cmdPalette        *tview.TextView
 	recipeViewer      *tview.TextView
 	mainFlexContainer *tview.Flex
+	recipeEntryForm   *tview.Form
 )
 
 const (
@@ -22,7 +25,7 @@ const (
 	commands = "Ctrl-C: Exit, "
 )
 
-func startCUI() error {
+func startCUI(db *sql.DB) error {
 
 	// want 3 column layout
 
@@ -78,6 +81,15 @@ func startCUI() error {
 	// always highlight selected list item
 	recipeList.SetSelectedFocusOnly(false)
 
+	recipeNames, err := GetRecipes(db)
+
+	//TODO: need to sort recipe names
+
+	for _, recipe := range recipeNames {
+		recipeList.AddItem(recipe, "", 0, nil)
+
+	}
+
 	tagList = tview.NewList()
 	tagList.ShowSecondaryText(false).SetWrapAround(true)
 	tagList.SetBorder(true).SetTitle("Tags")
@@ -100,6 +112,11 @@ func startCUI() error {
 	recipeViewer.SetDynamicColors(true).SetRegions(true)
 	recipeViewer.SetBorder(true)
 	// TODO: set title
+
+	// setting up form for adding recipes
+	recipeEntryForm = tview.NewForm()
+	// name, initial value, field width, validation function, changed function
+	recipeEntryForm.AddInputField("Recipe Name", "", 30, nil, nil)
 
 	// set up keybinds
 	recipeList.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
@@ -183,7 +200,7 @@ func startCUI() error {
 		AddItem(cmdPalette, 0, 1, false), 0, 2, false)
 	mainFlexContainer.AddItem(tagList, 0, 1, false)
 
-	err := app.SetRoot(mainFlexContainer, true).SetFocus(mainFlexContainer).Run()
+	err = app.SetRoot(mainFlexContainer, true).SetFocus(mainFlexContainer).Run()
 
 	if err != nil {
 		fatalLogger.Panicln(err)
