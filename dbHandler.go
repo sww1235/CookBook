@@ -10,7 +10,7 @@ import (
 )
 
 //initDB opens a connection to a sqlite database that stores recipes
-func initDB(databasePath string) *sql.DB {
+func initDB(databasePath string) (*sql.DB, error) {
 
 	// TODO: allow for other database backends, and allow for tables to be in separate backends
 
@@ -20,7 +20,7 @@ func initDB(databasePath string) *sql.DB {
 
 	mkErr := os.MkdirAll(path.Dir(databasePath), 0744)
 	if mkErr != nil {
-		fatalLogger.Panicf("Unable to use %s as recipe directory, Err: %s",
+		return nil, fmt.Errorf("Unable to use %s as recipe directory, Err: %w",
 			path.Dir(databasePath), mkErr)
 	}
 
@@ -31,7 +31,7 @@ func initDB(databasePath string) *sql.DB {
 
 	db, err := sql.Open("sqlite3", databasePath)
 	if err != nil {
-		fatalLogger.Panicln("Could not open recipe database", err)
+		return nil, fmt.Errorf("Could not open recipe database. %w", err)
 	}
 
 	// now check if correct tables exist, and create them if they do not.
@@ -63,7 +63,7 @@ func initDB(databasePath string) *sql.DB {
 		var rowCount int
 		err := db.QueryRow(sqlStatement, table).Scan(&rowCount)
 		if err != nil {
-			fatalLogger.Panicln("could not check if table exists", err)
+			return db, fmt.Errorf("could not check if table exists,%w", err)
 		}
 
 		debugLogger.Println(rowCount)
@@ -88,7 +88,7 @@ func initDB(databasePath string) *sql.DB {
 	// only needs to happen if some tables are missing, not all.
 	// if all tables are missing, then needsInit is true
 	if missingTable && !needInit {
-		fatalLogger.Panicln("Existing database missing at least one critical table. See log messages above." +
+		return db, fmt.Errorf("Existing database missing at least one critical table. See log messages above." +
 			"Either delete database so it can be recreated automatically, or manually create the missing tables")
 	}
 
@@ -180,12 +180,12 @@ func initDB(databasePath string) *sql.DB {
 
 			_, err := db.Exec(query)
 			if err != nil {
-				fatalLogger.Panicf("Failed to create table: %s due to error: %s", table, err)
+				return db, fmt.Errorf("Failed to create table: %s due to error: %w", table, err)
 			}
 		}
 
 	}
-	return db
+	return db, nil
 
 }
 
@@ -421,7 +421,7 @@ func GetRecipes(db *sql.DB) (map[int]string, error) {
 
 		err = rows.Scan(&id, &name)
 		if err != nil {
-			fatalLogger.Panicln("reading row failed", err)
+			return listRecipes, err
 		}
 		debugLogger.Printf("Recipe ID: %d, Recipe Name: %s", id, name)
 		// add row values to recipe map
@@ -453,7 +453,7 @@ func GetTags(db *sql.DB) (map[int]string, error) {
 
 		err = rows.Scan(&id, &name)
 		if err != nil {
-			fatalLogger.Panicln("reading row failed", err)
+			return listTags, err
 		}
 		debugLogger.Printf("Tag ID: %d, Tag Name: %s", id, name)
 		// add row values to recipe map
@@ -461,5 +461,27 @@ func GetTags(db *sql.DB) (map[int]string, error) {
 	}
 
 	return listTags, nil
+
+}
+
+// IngredientCount returns the number of ingredients in a recipe
+//
+// Used to size the ingredients table
+func IngredientCount(db *sql.DB, recipeID int) (int, error) {
+
+	sqlString := "SELECT count(*) FROM ingredients AS ing INNER JOIN ingredient_recipe AS ir " +
+		"ON ing.id = ir.ingredientID WHERE ir.RecipeID = ?"
+
+	ingCount := 0
+
+	debugLogger.Println(sqlString)
+	row := db.QueryRow(sqlString, recipeID)
+	//defer row.Close()
+	err := row.Scan(&ingCount)
+	if err != nil {
+		return ingCount, err
+	}
+
+	return ingCount, nil
 
 }

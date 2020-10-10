@@ -41,7 +41,7 @@ func main() {
 		fatalLogger.Panicln("Config and flag init failed", err)
 	}
 
-	db := initDB(config.RecipeDatabase)
+	db, err := initDB(config.RecipeDatabase)
 
 	defer db.Close()
 
