@@ -181,7 +181,7 @@ func ReadRecipe() (Recipe, error) {
 	if err != nil {
 		return tempRecipe, err
 	}
-	tempRecipe.QuantityMade, err = strconv.Atoi(tempString)
+	tempRecipe.QuantityMade, err = strconv.ParseFloat(tempString, 64)
 	if err != nil {
 		return tempRecipe, err
 	}

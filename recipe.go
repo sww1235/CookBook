@@ -5,8 +5,6 @@ import (
 	"time"
 )
 
-//TODO: look at adding equipment/pots/pans to Recipe struct
-
 //A Recipe struct is the internal representation of a recipe from a database
 type Recipe struct {
 	ID               int          // id of recipe in database, -1 if recipe doesn't exist in db
@@ -16,7 +14,7 @@ type Recipe struct {
 	Source           string       // source of recipe
 	Author           string       // author of recipe
 	Ingredients      []Ingredient // ingredients of recipe
-	QuantityMade     int          // how much of unit recipe makes
+	QuantityMade     float64      // how much of unit recipe makes
 	QuantityMadeUnit Unit         // unit of recipe
 	Steps            []Step       // steps of recipe
 	EquipmentNeeded  []Equipment  // equipment needed to make recipe
@@ -29,9 +27,9 @@ func (r Recipe) String() string {
 	stringString := ""
 	stringString += fmt.Sprintf("%s \n\n ", r.Name)
 	if r.QuantityMade > 1 {
-		stringString += fmt.Sprintf("Makes %d %s's\n", r.QuantityMade, r.QuantityMadeUnit)
+		stringString += fmt.Sprintf("Makes %G %s's\n", r.QuantityMade, r.QuantityMadeUnit)
 	} else if r.QuantityMade == 1 {
-		stringString += fmt.Sprintf("Makes %d %s\n", r.QuantityMade, r.QuantityMadeUnit)
+		stringString += fmt.Sprintf("Makes %G %s\n", r.QuantityMade, r.QuantityMadeUnit)
 	} else {
 		stringString += "Makes nothing, good job cookie\n"
 	}

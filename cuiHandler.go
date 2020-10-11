@@ -2,16 +2,17 @@ package main
 
 import (
 	"database/sql"
+	"strconv"
 
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
 )
 
 var (
-	app        *tview.Application
-	recipeList *tview.List
-	tagList    *tview.List
-	//recipePreview     *tview.TextView
+	app           *tview.Application
+	recipeList    *tview.List
+	tagList       *tview.List
+	recipePreview *tview.TextView
 	//cmdPalette        *tview.TextView
 	//recipeViewer      *tview.TextView
 	mainFlexContainer *tview.Flex
@@ -90,10 +91,10 @@ func startCUI(db *sql.DB) error {
 	if err != nil {
 		return err
 	}
-	//recipePreview, err = initRecipePreview()
-	//if err != nil {
-	//	return err
-	//}
+	recipePreview, err = initRecipePreview()
+	if err != nil {
+		return err
+	}
 	//recipeViewer, err = openRecipeViewer() //TODO: need to pass recipe into this
 	//if err != nil {return err}
 
@@ -109,7 +110,7 @@ func startCUI(db *sql.DB) error {
 	mainFlexContainer.AddItem(recipeList, 0, 1, true)
 	// add in internal flexbox to get two row layout
 	mainFlexContainer.AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
-		//AddItem(recipePreview, 0, 2, false).
+		AddItem(recipePreview, 0, 2, false).
 		AddItem(cmdPalette, 0, 1, false), 0, 2, false)
 	mainFlexContainer.AddItem(tagList, 0, 1, false)
 
@@ -206,12 +207,12 @@ func initRecipeList(db *sql.DB) (*tview.List, error) {
 	// always highlight selected list item
 	recipeList.SetSelectedFocusOnly(false)
 
-	recipeNames, err := GetRecipes(db)
+	recipes, err := GetRecipes(db)
 
 	//TODO: need to sort recipe names
 
-	for _, recipe := range recipeNames {
-		recipeList.AddItem(recipe, "", 0, nil)
+	for id, recipe := range recipes {
+		recipeList.AddItem(recipe, strconv.Itoa(id), 0, nil)
 
 	}
 
@@ -231,9 +232,9 @@ func initTagList(db *sql.DB) (*tview.List, error) {
 
 	//TODO: need to sort tags
 
-	for _, tag := range tagNames {
+	for id, tag := range tagNames {
 
-		tagList.AddItem(tag, "", 0, nil)
+		tagList.AddItem(tag, srconv.Itoa(id), 0, nil)
 	}
 
 	return tagList, err

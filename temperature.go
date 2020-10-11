@@ -2,11 +2,11 @@ package main
 
 import "fmt"
 
-type temperature struct {
+type Temperature struct {
 	Value float64
 	Unit  Unit
 }
 
-func (t temperature) String() string {
+func (t Temperature) String() string {
 	return fmt.Sprintf("%Gº %v", t.Value, t.Unit)
 }

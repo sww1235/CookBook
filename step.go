@@ -29,7 +29,7 @@ type Step struct {
 	ID           int // database id
 	TimeNeeded   time.Duration
 	StepType     StepType
-	Temperature  temperature
+	Temperature  Temperature
 	Instructions string
 }
 

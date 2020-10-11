@@ -65,8 +65,8 @@ Probably done using encoding in the step instructions field of the IngredientID
 | ID           | integer (pk)     | INTEGER (pk)      | unique ID for step                                 |
 | Instructions | text             | TEXT              | instructions for step                              |
 | Time         | decimal(7,2)     | NUM               | stores time of step in seconds.                    |
-| StepType     | int (fk)         | INTEGER (fk)      | foreign key mapping to step type description table |
-| temperature  | int              | INTEGER           | cooking temperature of step                        |
+| StepType     | int (fk)         | INTEGER (fk)      | mapping to either stepType table in database, or stepType iota in code |
+| temperature  | decimal(8,3)     | NUM               | cooking temperature of step                        |
 | tempUnit     | int (fk)         | INTEGER (fk)      | mapping to units table                             |
 
 
