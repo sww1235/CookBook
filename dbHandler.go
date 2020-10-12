@@ -224,7 +224,7 @@ func InsertRecipe(db *sql.DB, r Recipe) (int, error) {
 
 	for _, ing := range r.Ingredients {
 		// ingredient_recipe mapping is done in InsertIngredient
-		_, err := InsertIngredient(db, ing, r, ing.InventoryReference.ID)
+		_, err := InsertIngredient(db, ing, r, ing.InventoryReference)
 
 		if err != nil {
 			return -1, err
@@ -400,9 +400,8 @@ func UpdateStep(db *sql.DB, stp Step) (int, error) {
 	return stp.ID, err
 }
 
-// GetRecipes returns a map of Recipe structs indexed on
-// the database table index
-func GetRecipes(db *sql.DB) (map[int]Recipe, error) {
+// GetRecipes returns a slice of all recipes in database
+func GetRecipes(db *sql.DB) ([]Recipe, error) {
 
 	sqlString := "SELECT * FROM recipes"
 
@@ -413,8 +412,8 @@ func GetRecipes(db *sql.DB) (map[int]Recipe, error) {
 	}
 	defer rows.Close()
 
-	recipes := make(map[int]Recipe)
-	units, err := GetUnit(db)
+	var recipes []Recipe
+	units, err := GetUnits(db)
 	if err != nil {
 		return nil, err
 	}
@@ -434,10 +433,12 @@ func GetRecipes(db *sql.DB) (map[int]Recipe, error) {
 
 		err = rows.Scan(&id, &name, &description, &comments, &source, &author,
 			&quantity, &qtyUnitsid, &initialVersion, &version)
+
+		//TODO: implement sort.sliceStable and sort.Search instead of map indices
 		if err != nil {
 			return nil, err
 		}
-		ingredients, err := GetIngredinetsForRecipe(db, id)
+		ingredients, err := GetIngredientsForRecipe(db, id)
 		if err != nil {
 			return nil, err
 		}
@@ -454,11 +455,11 @@ func GetRecipes(db *sql.DB) (map[int]Recipe, error) {
 			return nil, err
 		}
 		debugLogger.Printf("Recipe ID: %d, Recipe Name: %s", id, name)
-		// add row values to recipe map
-		recipes[id] = Recipe{Id: id, Name: name, Description: description, Comments: comments,
+		tempRecipe := Recipe{ID: id, Name: name, Description: description, Comments: comments,
 			Source: source, Author: author, Ingredients: ingredients, QuantityMade: quantity,
 			QuantityMadeUnits: units[qtyUnitsid], Steps: steps,
 			Equipment: equipment, Tags: tags, Version: version, InitialVersion: initialVersion}
+		recipes = append(recipes, tempRecipe)
 	}
 
 	return recipes, nil
@@ -467,7 +468,7 @@ func GetRecipes(db *sql.DB) (map[int]Recipe, error) {
 
 // GetEquipmentForRecipe returns a map of Equipment structs indexed on
 // the database table index for the specified recipe
-func GetEquipmentForRecipe(db *sql.DB, recipeID int) (map[int]Equipment, error) {
+func GetEquipmentForRecipe(db *sql.DB, recipeID int) ([]Equipment, error) {
 
 	sqlString := "SELECT * FROM equipment AS equip INNER JOIN equipment_recipe AS er" +
 		"ON equip.id = er.equipmentID WHERE er.recipeID = ?"
@@ -479,7 +480,7 @@ func GetEquipmentForRecipe(db *sql.DB, recipeID int) (map[int]Equipment, error) 
 	}
 	defer rows.Close()
 
-	equipment := make(map[int]Equipment)
+	var equipment []Equipment
 
 	for rows.Next() {
 		var (
@@ -494,7 +495,8 @@ func GetEquipmentForRecipe(db *sql.DB, recipeID int) (map[int]Equipment, error) 
 		}
 
 		debugLogger.Printf("Ingredient ID: %d, Ingredient Name: %s", id, name)
-		equipment[id] = Equipment{Id: id, Name: name, IsOwned: isOwned}
+		tempEquipment := Equipment{Id: id, Name: name, IsOwned: isOwned}
+		equipment = append(equipment, tempEquipment)
 	}
 
 	return equipment, nil
@@ -502,7 +504,7 @@ func GetEquipmentForRecipe(db *sql.DB, recipeID int) (map[int]Equipment, error) 
 
 // GetIngredientsForRecipe returns a map of Ingredient structs indexed on
 // the database table index for the specified recipe
-func GetIngredientsForRecipe(db *sql.DB, recipeID int) (map[int]Ingredient, error) {
+func GetIngredientsForRecipe(db *sql.DB, recipeID int) ([]Ingredient, error) {
 
 	sqlString := "SELECT * FROM ingredients AS ing INNER JOIN ingredient_recipe AS ir" +
 		"ON ing.id = ir.ingredientID WHERE ir.recipeID = ?"
@@ -514,7 +516,7 @@ func GetIngredientsForRecipe(db *sql.DB, recipeID int) (map[int]Ingredient, erro
 	}
 	defer rows.Close()
 
-	ingredients := make(map[int]Ingredient)
+	var ingredients []Ingredient
 
 	units, err := GetUnit(db)
 	if err != nil {
@@ -533,27 +535,23 @@ func GetIngredientsForRecipe(db *sql.DB, recipeID int) (map[int]Ingredient, erro
 		if err != nil {
 			return nil, err
 		}
-		inventory, err := GetInventoryForIngredient(db, id)
+		inventory, err := GetInventoryForIngredient(db, id) // returns inventory struct
 		if err != nil {
 			return nil, err
 		}
 
-		var invStruct []Inventory
-		for _, inv := range inventory {
-			invStruct = append(invStruct, inv)
-		}
-
 		debugLogger.Printf("Ingredient ID: %d, Ingredient Name: %s", id, name)
-		ingredients[id] = Ingredient{Id: id, Name: name, QuantityUsed: quantity,
-			QuantityUsedUnits: units[unit], InventoryReference: invStruct}
+		tempIngredient := Ingredient{Id: id, Name: name, QuantityUsed: quantity,
+			QuantityUsedUnits: units[unit], InventoryReference: inventory}
+		ingredients = append(ingredients, tempIngredient)
 	}
 
 	return ingredients, nil
 }
 
-// GetStepsForRecipe returns a map of Step structs indexed on
-// the database table index for the specified recipe
-func GetStepsForRecipe(db *sql.DB, recipeID int) (map[int]Step, error) {
+// GetStepsForRecipe returns a slice of Step structs
+// for the specified recipe
+func GetStepsForRecipe(db *sql.DB, recipeID int) ([]Step, error) {
 
 	sqlString := "SELECT * FROM steps INNER JOIN step_recipe AS is" +
 		"ON steps.id = is.stepID WHERE ir.recipeID = ?"
@@ -565,7 +563,7 @@ func GetStepsForRecipe(db *sql.DB, recipeID int) (map[int]Step, error) {
 	}
 	defer rows.Close()
 
-	steps := make(map[int]Step)
+	var steps []Step
 
 	units, err := GetUnit(db)
 	if err != nil {
@@ -593,17 +591,16 @@ func GetStepsForRecipe(db *sql.DB, recipeID int) (map[int]Step, error) {
 		temp := Temperature{Value: temperature, Unit: temperatureUnit}
 
 		debugLogger.Printf("Step ID: %d", id)
-		steps[id] = Step{Id: id, TimeNeeded: duration, StepType: StepType(stepType),
+		tempStep := Step{Id: id, TimeNeeded: duration, StepType: StepType(stepType),
 			Temperature: temp}
+		steps = append(steps, tempStep)
 	}
 
-	return ingredients, nil
+	return steps, nil
 }
 
-// GetIngredients returns a map of Ingredient structs indexed on
-// the database table index
-
-func GetIngredients(db *sql.DB) (map[int]Ingredient, error) {
+// GetIngredients returns a slice of all ingredients in the databse
+func GetIngredients(db *sql.DB) ([]Ingredient, error) {
 
 	sqlString := "SELECT * FROM ingredients"
 
@@ -614,7 +611,7 @@ func GetIngredients(db *sql.DB) (map[int]Ingredient, error) {
 	}
 	defer rows.Close()
 
-	ingredients := make(map[int]Ingredient)
+	var ingredients []Ingredient
 
 	units, err := GetUnit(db)
 	if err != nil {
@@ -633,27 +630,23 @@ func GetIngredients(db *sql.DB) (map[int]Ingredient, error) {
 		if err != nil {
 			return nil, err
 		}
-		inventory, err := GetInventoryForIngredient(db, id)
+		inventory, err := GetInventoryForIngredient(db, id) // returns inventory struct
 		if err != nil {
 			return nil, err
 		}
 
-		var invStruct []Inventory
-		for _, inv := range inventory {
-			invStruct = append(invStruct, inv)
-		}
-
 		debugLogger.Printf("Ingredient ID: %d, Ingredient Name: %s", id, name)
-		ingredients[id] = Ingredient{Id: id, Name: name, QuantityUsed: quantity,
-			QuantityUsedUnits: units[unit], InventoryReference: invStruct}
+		tempIngredient := Ingredient{Id: id, Name: name, QuantityUsed: quantity,
+			QuantityUsedUnits: units[unit], InventoryReference: inventory}
+		ingredients = append(ingredients, tempIngredient)
 	}
 
 	return ingredients, nil
 }
 
-// GetConversions returns a map of Conversion objects indexed on
-// the database table index
-func GetConversions(db *sql.DB) (map[int]Conversion, error) {
+// GetConversions returns a slice of all unit conversions
+// in the database
+func GetConversions(db *sql.DB) ([]Conversion, error) {
 
 	sqlString := "SELECT * FROM unitConversions"
 
@@ -664,7 +657,7 @@ func GetConversions(db *sql.DB) (map[int]Conversion, error) {
 	}
 	defer rows.Close()
 
-	conversions := make(map[int]Conversion, error)
+	var conversions []Conversion
 
 	for rows.Next() {
 
@@ -683,16 +676,17 @@ func GetConversions(db *sql.DB) (map[int]Conversion, error) {
 			return nil, err
 		}
 		debugLogger.Printf("ConversionID: %d", id)
-		conversions[id] = Conversion{Id: id, FromUnit: fromUnit, ToUnit: toUnit,
+		tempConversion := Conversion{Id: id, FromUnit: fromUnit, ToUnit: toUnit,
 			Multiplicand: multiplicand, Denominator: denominator,
 			FromOffset: fromOffset, ToOffset: toOffset}
 
+		conversions = append(conversions, tempConversion)
 	}
 }
 
-// GetConversionsToUnit returns a map of Conversion objects indexed on
-// the database table index toUnit
-func GetConversionsToUnit(db *sql.DB, toUnit int) (map[int]Conversion, error) {
+// GetConversionsToUnit returns a slice of Conversion objects that
+// are converting to toUnit
+func GetConversionsToUnit(db *sql.DB, toUnit int) ([]Conversion, error) {
 
 	sqlString := "SELECT * FROM unitConversions WHERE toUnit = ?"
 
@@ -703,7 +697,7 @@ func GetConversionsToUnit(db *sql.DB, toUnit int) (map[int]Conversion, error) {
 	}
 	defer rows.Close()
 
-	conversions := make(map[int]Conversion, error)
+	var conversions []Conversion
 
 	for rows.Next() {
 
@@ -722,16 +716,18 @@ func GetConversionsToUnit(db *sql.DB, toUnit int) (map[int]Conversion, error) {
 			return nil, err
 		}
 		debugLogger.Printf("ConversionID: %d", id)
-		conversions[id] = Conversion{Id: id, FromUnit: fromUnit, ToUnit: toUnit,
+		tempConversion := Conversion{Id: id, FromUnit: fromUnit, ToUnit: toUnit,
 			Multiplicand: multiplicand, Denominator: denominator,
 			FromOffset: fromOffset, ToOffset: toOffset}
 
+		conversions = append(conversions, tempConversion)
 	}
+	return conversions, nil
 }
 
-// GetConversionsFromUnit returns a map of Conversion objects indexed on
-// the database table index fromUnit
-func GetConversionsFromUnit(db *sql.DB, fromUnit int) (map[int]Conversion, error) {
+// GetConversionsFromUnit returns a slice of Conversion objects that
+// are converting from: fromUnit
+func GetConversionsFromUnit(db *sql.DB, fromUnit int) ([]Conversion, error) {
 
 	sqlString := "SELECT * FROM unitConversions WHERE fromUnit = ?"
 
@@ -742,7 +738,7 @@ func GetConversionsFromUnit(db *sql.DB, fromUnit int) (map[int]Conversion, error
 	}
 	defer rows.Close()
 
-	conversions := make(map[int]Conversion, error)
+	var conversions []Conversion
 
 	for rows.Next() {
 
@@ -761,18 +757,18 @@ func GetConversionsFromUnit(db *sql.DB, fromUnit int) (map[int]Conversion, error
 			return nil, err
 		}
 		debugLogger.Printf("ConversionID: %d", id)
-		conversions[id] = Conversion{Id: id, FromUnit: fromUnit, ToUnit: toUnit,
+		tempConversion := Conversion{Id: id, FromUnit: fromUnit, ToUnit: toUnit,
 			Multiplicand: multiplicand, Denominator: denominator,
 			FromOffset: fromOffset, ToOffset: toOffset}
-
+		conversions = append(conversions, tempConversion)
 	}
+	return conversions, nil
 }
 
-// GetInventory returns a map of Inventory structs indexed on
-// the database table index
+// GetInventory returns a slice of all Inventory objects in the database
 //
 //This is used for getting all items in inventory
-func GetInventory(db *sql.DB) (map[int]Inventory, error) {
+func GetInventory(db *sql.DB) ([]InventoryItem, error) {
 
 	sqlString := "SELECT * FROM inventory"
 
@@ -783,7 +779,7 @@ func GetInventory(db *sql.DB) (map[int]Inventory, error) {
 	}
 	defer rows.Close()
 
-	inventory := make(map[int]Inventory)
+	var inventory []InventoryItem
 
 	units, err := GetUnit(db)
 	if err != nil {
@@ -804,19 +800,20 @@ func GetInventory(db *sql.DB) (map[int]Inventory, error) {
 		if err != nil {
 			return nil, err
 		}
-		debugLogger.Printf("Inventory ID: %d, Inventory Item Name: %s", id, name)
-		inventory[id] = Inventory{Id: id, EAN: ean, Name: name, Description: description, Quantity: quantity,
-			QuantityUnits: units[unit]}
+		debugLogger.Printf("Inventory Item ID: %d, Inventory Item Name: %s", id, name)
+		tempInventoryItem := InventoryItem{Id: id, EAN: ean, Name: name,
+			Description: description, Quantity: quantity, QuantityUnits: units[unit]}
+		inventory = append(inventory, tempInventoryItem)
+
 	}
 
 	return ingredients, nil
 
 }
 
-// GetInventoryForIngredient returns a map of Inventory structs
-// indexed on the database table index associated with
+// GetInventoryForIngredient returns a slice of inventory objects associated with
 // the specified ingredientID
-func GetInventoryForIngredient(db *sql.DB, ingredientID int) (map[int]Inventory, error) {
+func GetInventoryForIngredient(db *sql.DB, ingredientID int) ([]InventoryItem, error) {
 
 	sqlString := "SELECT * FROM inventory AS inv INNER JOIN ingredient_inventory AS ii " +
 		"ON inv.id = ii.inventoryID WHERE ii.ingredientID = ?"
@@ -828,7 +825,7 @@ func GetInventoryForIngredient(db *sql.DB, ingredientID int) (map[int]Inventory,
 	}
 	defer rows.Close()
 
-	inventory := make(map[int]Inventory)
+	var inventory []InventoryItem
 
 	units, err := GetUnit(db)
 	if err != nil {
@@ -850,17 +847,18 @@ func GetInventoryForIngredient(db *sql.DB, ingredientID int) (map[int]Inventory,
 			return nil, err
 		}
 		debugLogger.Printf("Inventory ID: %d, Inventory Item Name: %s", id, name)
-		inventory[id] = Inventory{Id: id, EAN: ean, Name: name, Description: description, Quantity: quantity,
-			QuantityUnits: units[unit]}
+		tempInventory := InventoryUnit{Id: id, EAN: ean, Name: name, Description: description,
+			Quantity: quantity, QuantityUnits: units[unit]}
+
+		inventory = append(inventory, tempInventory)
 	}
 
 	return ingredients, nil
 
 }
 
-// GetUnits returns a map of Unit structs indexed on
-// the database table index
-func GetUnits(db *sql.DB) (map[int]Unit, error) {
+// GetUnits returns a slice of all units  defined in the database
+func GetUnits(db *sql.DB) ([]Unit, error) {
 
 	sqlString := "SELECT * FROM units"
 
@@ -871,7 +869,7 @@ func GetUnits(db *sql.DB) (map[int]Unit, error) {
 	}
 	defer rows.Close()
 
-	units := make(map[int]Unit)
+	var units []Unit
 
 	unitTypes, err := GetUnitTypes(db)
 	if err != nil {
@@ -900,16 +898,19 @@ func GetUnits(db *sql.DB) (map[int]Unit, error) {
 			return nil, err
 		}
 		debugLogger.Printf("Unit ID: %d, Unit Name: %s", id, name)
-		units[id] = Unit{Id: id, Name: name, Description: description,
+		tempUnit := Unit{Id: id, Name: name, Description: description,
 			RefIngredient: ingredients[refIngredient], UnitType: unitTypes[unitType]}
+		units = append(units, tempUnit)
 	}
 
 	return units, nil
 }
 
-// GetUnitTypes returns a map of UnitType structs indexed on
-// the database table index.
-func GetUnitTypes(db *sql.DB) (map[int]UnitType, error) {
+// GetUnitTypes returns a slice of UnitType objects that are
+// in the database
+//
+//Note: this table is essentially static
+func GetUnitTypes(db *sql.DB) ([]UnitType, error) {
 
 	sqlString := "SELECT * FROM unitType"
 
@@ -920,7 +921,7 @@ func GetUnitTypes(db *sql.DB) (map[int]UnitType, error) {
 	}
 	defer rows.Close()
 
-	unitTypes := make(map[int]UnitType)
+	var unitTypes []UnitType
 
 	for rows.Next() {
 		var (
@@ -933,15 +934,16 @@ func GetUnitTypes(db *sql.DB) (map[int]UnitType, error) {
 			return nil, err
 		}
 		debugLogger.Printf("UnitType ID: %d, UnitType Name: %s", id, name)
-
-		unitTypes[id] = UnitType{Id: id, Name: name}
+		tempUnitType := UnitType{Id: id, Name: name}
+		unitTypes = append(unitTypes, tempUnitType)
 	}
 	return unitTypes, nil
 
 }
 
-// GetTagsForRecipe
-func GetTagsForRecipe(db *sql.DB, recipeID int) (map[int]Tag, error) {
+// GetTagsForRecipe returns a slice of Tag objects containing the tags associated
+// with the passed in recipe ID
+func GetTagsForRecipe(db *sql.DB, recipeID int) ([]Tag, error) {
 
 	sqlString := "SELECT * FROM tags INNER JOIN tag_recipe AS tr" +
 		"ON tags.id = tr.tagID WHERE tr.recipeID = ?"
@@ -953,7 +955,7 @@ func GetTagsForRecipe(db *sql.DB, recipeID int) (map[int]Tag, error) {
 	}
 	defer rows.Close()
 
-	tags := make(map[int]Tag)
+	var tags []Tag
 
 	for rows.Next() {
 		var (
@@ -968,16 +970,18 @@ func GetTagsForRecipe(db *sql.DB, recipeID int) (map[int]Tag, error) {
 		}
 
 		debugLogger.Printf("Tag ID: %d, Tag: %s", id, name)
-		tags[id] = Tag{Id: id, Name: name, Description: description}
+		tempTag := Tag{Id: id, Name: name, Description: description}
+		tags = append(tags, tempTag)
+
 	}
 
 	return tags, nil
 }
 
-// GetTags returns a map of tag names indexed on their database id
+// GetTags returns a slice of Tag objects containing all tags in database
 //
 // Used to populate a list of tags. Not for getting all attributes of tags
-func GetTags(db *sql.DB) (map[int]string, error) {
+func GetTags(db *sql.DB) ([]Tag, error) {
 	sqlString := "SELECT * FROM tags"
 
 	debugLogger.Println(sqlString)
@@ -987,7 +991,7 @@ func GetTags(db *sql.DB) (map[int]string, error) {
 	}
 	defer rows.Close()
 
-	tags := make(map[int]Tag)
+	var tags []Tag
 
 	for rows.Next() {
 		var (
@@ -1002,7 +1006,8 @@ func GetTags(db *sql.DB) (map[int]string, error) {
 		}
 
 		debugLogger.Printf("Tag ID: %d, Tag: %s", id, name)
-		tags[id] = Tag{Id: id, Name: name, Description: description}
+		tempTag := Tag{Id: id, Name: name, Description: description}
+		tags = append(tags, tempTag)
 	}
 
 	return tags, nil
