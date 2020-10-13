@@ -23,17 +23,27 @@ func (i Ingredient) String() string {
 
 }
 
+// ByName implements sort.Interface for []Ingredient
+// based on the Name field
+// https://golang.org/pkg/sort/#pkg-overview
+type ByName []Ingredient
+
+func (n ByName) Len() int           { return len(n) }
+func (n ByName) Swap(i, j int)      { n[i], n[j] = n[j], n[i] }
+func (n ByName) Less(i, j int) bool { return n[i].Name < n[j] }
+
+// ByID implements sort.Interface for []Ingredient
+// based on the ID field
+// https://golang.org/pkg/sort/#pkg-overview
+type ByID []Ingredient
+
+func (d ByID) Len() int           { return len(d) }
+func (d ByID) Swap(i, j int)      { d[i], d[j] = d[j], d[i] }
+func (d ByID) Less(i, j int) bool { return d[i].ID < d[j].ID }
+
 //// ConvertString acts like String() but allows for conversion between units
 //func (i Ingredient) ConvertString(toUnit string) string {
 //	return "fixme" //TODO: implement
-//}
-//
-//// AddConversion adds a conversion factor to an ingredient
-//func (i *Ingredient) AddConversion(id int, fromUnit Unit, toUnit Unit, multiplicand float64,
-//	denominator float64, fromOffset float64, toOffset float64) {
-//
-//	i.Conversions = append(i.Conversions, conversion{id, fromUnit.ID, toUnit.ID,
-//		multiplicand, denominator, fromOffset, toOffset})
 //}
 //
 //// Convert converts Ingredient quantityUsed from default QuantityUnit to toUnit

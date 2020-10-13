@@ -417,6 +417,9 @@ func GetRecipes(db *sql.DB) ([]Recipe, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	sort.Stable(ByID(units)) // sort units slice stably
+
 	for rows.Next() {
 		var (
 			id             int
@@ -426,7 +429,7 @@ func GetRecipes(db *sql.DB) ([]Recipe, error) {
 			source         string
 			author         string
 			quantity       float64
-			qtyUnitsid     int //fk
+			qtyUnitsId     int //fk
 			initialVersion int //fk
 			version        int
 		)
@@ -434,30 +437,40 @@ func GetRecipes(db *sql.DB) ([]Recipe, error) {
 		err = rows.Scan(&id, &name, &description, &comments, &source, &author,
 			&quantity, &qtyUnitsid, &initialVersion, &version)
 
-		//TODO: implement sort.sliceStable and sort.Search instead of map indices
 		if err != nil {
 			return nil, err
 		}
-		ingredients, err := GetIngredientsForRecipe(db, id)
+		ingredients, err := GetIngredientsForRecipe(db, id) // returns slice of ingredients
 		if err != nil {
 			return nil, err
 		}
-		steps, err := GetStepsForRecipe(db, id)
+		steps, err := GetStepsForRecipe(db, id) // returns slice of steps
 		if err != nil {
 			return nil, err
 		}
-		equipment, err := GetEquipmentForRecipe(db, id)
+		equipment, err := GetEquipmentForRecipe(db, id) // returns slice of equipment
 		if err != nil {
 			return nil, err
 		}
-		tags, err := GetTagsForRecipe(db, id)
+		tags, err := GetTagsForRecipe(db, id) // returns slice of tags
 		if err != nil {
 			return nil, err
 		}
+
+		// https://golang.org/pkg/sort/#Search
+		// first find index
+		idIdx := sort.Search(len(units), func(i int) bool { return units[i].ID >= qtyUnitsId })
+		// then perform sanity checks
+		if idIdx < len(units) && units[idIdx].ID == qtyUnitsId {
+			tempUnit := units[idIdx]
+		} else {
+			return nil, fmt.Errorf("ID: %d not found in units slice %v", qtyUnitsId, units)
+		}
+
 		debugLogger.Printf("Recipe ID: %d, Recipe Name: %s", id, name)
 		tempRecipe := Recipe{ID: id, Name: name, Description: description, Comments: comments,
 			Source: source, Author: author, Ingredients: ingredients, QuantityMade: quantity,
-			QuantityMadeUnits: units[qtyUnitsid], Steps: steps,
+			QuantityMadeUnit: tempUnit, Steps: steps,
 			Equipment: equipment, Tags: tags, Version: version, InitialVersion: initialVersion}
 		recipes = append(recipes, tempRecipe)
 	}
