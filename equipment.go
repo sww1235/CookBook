@@ -24,17 +24,17 @@ func (e Equipment) String() string {
 // ByName implements sort.Interface for []Equipment
 // based on the Name field
 // https://golang.org/pkg/sort/#pkg-overview
-type ByName []Equipment
+type ByNameE []Equipment
 
-func (n ByName) Len() int           { return len(n) }
-func (n ByName) Swap(i, j int)      { n[i], n[j] = n[j], n[i] }
-func (n ByName) Less(i, j int) bool { return n[i].Name < n[j] }
+func (n ByNameE) Len() int           { return len(n) }
+func (n ByNameE) Swap(i, j int)      { n[i], n[j] = n[j], n[i] }
+func (n ByNameE) Less(i, j int) bool { return n[i].Name < n[j] }
 
 // ByID implements sort.Interface for []Equipment
 // based on the ID field
 // https://golang.org/pkg/sort/#pkg-overview
-type ByID []Equipment
+type ByIDE []Equipment
 
-func (d ByID) Len() int           { return len(d) }
-func (d ByID) Swap(i, j int)      { d[i], d[j] = d[j], d[i] }
-func (d ByID) Less(i, j int) bool { return d[i].ID < d[j].ID }
+func (d ByIDE) Len() int           { return len(d) }
+func (d ByIDE) Swap(i, j int)      { d[i], d[j] = d[j], d[i] }
+func (d ByIDE) Less(i, j int) bool { return d[i].ID < d[j].ID }

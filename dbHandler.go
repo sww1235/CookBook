@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"sort"
+	"strconv"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -418,7 +421,7 @@ func GetRecipes(db *sql.DB) ([]Recipe, error) {
 		return nil, err
 	}
 
-	sort.Stable(ByID(units)) // sort units slice stably
+	sort.Stable(ByIDU(units)) // sort units slice stably
 
 	for rows.Next() {
 		var (
@@ -435,7 +438,7 @@ func GetRecipes(db *sql.DB) ([]Recipe, error) {
 		)
 
 		err = rows.Scan(&id, &name, &description, &comments, &source, &author,
-			&quantity, &qtyUnitsid, &initialVersion, &version)
+			&quantity, &qtyUnitsId, &initialVersion, &version)
 
 		if err != nil {
 			return nil, err
@@ -461,8 +464,9 @@ func GetRecipes(db *sql.DB) ([]Recipe, error) {
 		// first find index
 		idIdx := sort.Search(len(units), func(i int) bool { return units[i].ID >= qtyUnitsId })
 		// then perform sanity checks
+		var tempUnit Unit
 		if idIdx < len(units) && units[idIdx].ID == qtyUnitsId {
-			tempUnit := units[idIdx]
+			tempUnit = units[idIdx]
 		} else {
 			return nil, fmt.Errorf("ID: %d not found in units slice %v", qtyUnitsId, units)
 		}

@@ -51,17 +51,17 @@ func (st StepType) String() string {
 // ByName implements sort.Interface for []Step
 // based on the Name field
 // https://golang.org/pkg/sort/#pkg-overview
-type ByName []Step
+type ByNameS []Step
 
-func (n ByName) Len() int           { return len(n) }
-func (n ByName) Swap(i, j int)      { n[i], n[j] = n[j], n[i] }
-func (n ByName) Less(i, j int) bool { return n[i].Name < n[j] }
+func (n ByNameS) Len() int           { return len(n) }
+func (n ByNameS) Swap(i, j int)      { n[i], n[j] = n[j], n[i] }
+func (n ByNameS) Less(i, j int) bool { return n[i].Name < n[j] }
 
 // ByID implements sort.Interface for []Step
 // based on the ID field
 // https://golang.org/pkg/sort/#pkg-overview
-type ByID []Step
+type ByIDS []Step
 
-func (d ByID) Len() int           { return len(d) }
-func (d ByID) Swap(i, j int)      { d[i], d[j] = d[j], d[i] }
-func (d ByID) Less(i, j int) bool { return d[i].ID < d[j].ID }
+func (d ByIDS) Len() int           { return len(d) }
+func (d ByIDS) Swap(i, j int)      { d[i], d[j] = d[j], d[i] }
+func (d ByIDS) Less(i, j int) bool { return d[i].ID < d[j].ID }

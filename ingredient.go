@@ -26,20 +26,20 @@ func (i Ingredient) String() string {
 // ByName implements sort.Interface for []Ingredient
 // based on the Name field
 // https://golang.org/pkg/sort/#pkg-overview
-type ByName []Ingredient
+type ByNameIn []Ingredient
 
-func (n ByName) Len() int           { return len(n) }
-func (n ByName) Swap(i, j int)      { n[i], n[j] = n[j], n[i] }
-func (n ByName) Less(i, j int) bool { return n[i].Name < n[j] }
+func (n ByNameIn) Len() int           { return len(n) }
+func (n ByNameIn) Swap(i, j int)      { n[i], n[j] = n[j], n[i] }
+func (n ByNameIn) Less(i, j int) bool { return n[i].Name < n[j] }
 
 // ByID implements sort.Interface for []Ingredient
 // based on the ID field
 // https://golang.org/pkg/sort/#pkg-overview
-type ByID []Ingredient
+type ByIDIn []Ingredient
 
-func (d ByID) Len() int           { return len(d) }
-func (d ByID) Swap(i, j int)      { d[i], d[j] = d[j], d[i] }
-func (d ByID) Less(i, j int) bool { return d[i].ID < d[j].ID }
+func (d ByIDIn) Len() int           { return len(d) }
+func (d ByIDIn) Swap(i, j int)      { d[i], d[j] = d[j], d[i] }
+func (d ByIDIn) Less(i, j int) bool { return d[i].ID < d[j].ID }
 
 //// ConvertString acts like String() but allows for conversion between units
 //func (i Ingredient) ConvertString(toUnit string) string {
