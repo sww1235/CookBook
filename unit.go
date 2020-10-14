@@ -41,16 +41,26 @@ type UnitType struct {
 	Name string
 }
 
-// ByName implements sort.Interface for []Unit
+// ByIDUT implements sort.Interface for []UnitType
+// based on the Name field
+// https://golang.org/pkg/sort/#pkg-overview
+
+type ByIDUT []UnitType
+
+func (t ByIDUT) Len() int           { return len(t) }
+func (t ByIDUT) Swap(i, j int)      { t[i], t[j] = t[j], t[i] }
+func (t ByIDUT) Less(i, j int) bool { return t[i].ID < t[j].ID }
+
+// ByNameU implements sort.Interface for []Unit
 // based on the Name field
 // https://golang.org/pkg/sort/#pkg-overview
 type ByNameU []Unit
 
 func (n ByNameU) Len() int           { return len(n) }
 func (n ByNameU) Swap(i, j int)      { n[i], n[j] = n[j], n[i] }
-func (n ByNameU) Less(i, j int) bool { return n[i].Name < n[j] }
+func (n ByNameU) Less(i, j int) bool { return n[i].Name < n[j].Name }
 
-// ByID implements sort.Interface for []Unit
+// ByIDU implements sort.Interface for []Unit
 // based on the ID field
 // https://golang.org/pkg/sort/#pkg-overview
 type ByIDU []Unit
@@ -59,7 +69,7 @@ func (d ByIDU) Len() int           { return len(d) }
 func (d ByIDU) Swap(i, j int)      { d[i], d[j] = d[j], d[i] }
 func (d ByIDU) Less(i, j int) bool { return d[i].ID < d[j].ID }
 
-// ByID implements sort.Interface for []Conversion
+// ByIDC implements sort.Interface for []Conversion
 // based on the ID field
 // https://golang.org/pkg/sort/#pkg-overview
 type ByIDC []Conversion

@@ -475,7 +475,7 @@ func GetRecipes(db *sql.DB) ([]Recipe, error) {
 		tempRecipe := Recipe{ID: id, Name: name, Description: description, Comments: comments,
 			Source: source, Author: author, Ingredients: ingredients, QuantityMade: quantity,
 			QuantityMadeUnit: tempUnit, Steps: steps,
-			Equipment: equipment, Tags: tags, Version: version, InitialVersion: initialVersion}
+			EquipmentNeeded: equipment, Tags: tags, Version: version, InitialVersion: initialVersion}
 		recipes = append(recipes, tempRecipe)
 	}
 
@@ -512,7 +512,7 @@ func GetEquipmentForRecipe(db *sql.DB, recipeID int) ([]Equipment, error) {
 		}
 
 		debugLogger.Printf("Ingredient ID: %d, Ingredient Name: %s", id, name)
-		tempEquipment := Equipment{Id: id, Name: name, IsOwned: isOwned}
+		tempEquipment := Equipment{ID: id, Name: name, Owned: isOwned}
 		equipment = append(equipment, tempEquipment)
 	}
 
@@ -535,10 +535,12 @@ func GetIngredientsForRecipe(db *sql.DB, recipeID int) ([]Ingredient, error) {
 
 	var ingredients []Ingredient
 
-	units, err := GetUnit(db)
+	units, err := GetUnits(db)
 	if err != nil {
 		return nil, err
 	}
+
+	sort.Stable(ByIDU(units)) // sort units slice stably
 
 	for rows.Next() {
 		var (
@@ -556,10 +558,21 @@ func GetIngredientsForRecipe(db *sql.DB, recipeID int) ([]Ingredient, error) {
 		if err != nil {
 			return nil, err
 		}
+		// https://golang.org/pkg/sort/#Search
+		// first find index
+		idIdx := sort.Search(len(units), func(i int) bool { return units[i].ID >= unit })
+
+		// then perform sanity checks
+		var tempUnit Unit
+		if idIdx < len(units) && units[idIdx].ID == unit {
+			tempUnit = units[idIdx]
+		} else {
+			return nil, fmt.Errorf("ID: %d not found in units slice %v", unit, units)
+		}
 
 		debugLogger.Printf("Ingredient ID: %d, Ingredient Name: %s", id, name)
-		tempIngredient := Ingredient{Id: id, Name: name, QuantityUsed: quantity,
-			QuantityUsedUnits: units[unit], InventoryReference: inventory}
+		tempIngredient := Ingredient{ID: id, Name: name, QuantityUsed: quantity,
+			QuantityUnit: tempUnit, InventoryReference: inventory}
 		ingredients = append(ingredients, tempIngredient)
 	}
 
@@ -582,10 +595,12 @@ func GetStepsForRecipe(db *sql.DB, recipeID int) ([]Step, error) {
 
 	var steps []Step
 
-	units, err := GetUnit(db)
+	units, err := GetUnits(db)
 	if err != nil {
 		return nil, err
 	}
+
+	sort.Stable(ByIDU(units)) // sort units slice stably
 
 	for rows.Next() {
 		var (
@@ -603,12 +618,26 @@ func GetStepsForRecipe(db *sql.DB, recipeID int) ([]Step, error) {
 			return nil, err
 		}
 
-		duration := time.ParseDuration(strconv.Itoa(timeNeeded) + s)
-		temperatureUnit := units[tempUnit]
+		// https://golang.org/pkg/sort/#Search
+		// first find index
+		idIdx := sort.Search(len(units), func(i int) bool { return units[i].ID >= tempUnit })
+
+		// then perform sanity checks
+		var temperatureUnit Unit
+		if idIdx < len(units) && units[idIdx].ID == tempUnit {
+			temperatureUnit = units[idIdx]
+		} else {
+			return nil, fmt.Errorf("ID: %d not found in units slice %v", tempUnit, units)
+		}
+
+		duration, err := time.ParseDuration(strconv.Itoa(timeNeeded) + "s")
+		if err != nil {
+			return nil, err
+		}
 		temp := Temperature{Value: temperature, Unit: temperatureUnit}
 
 		debugLogger.Printf("Step ID: %d", id)
-		tempStep := Step{Id: id, TimeNeeded: duration, StepType: StepType(stepType),
+		tempStep := Step{ID: id, TimeNeeded: duration, StepType: StepType(stepType),
 			Temperature: temp}
 		steps = append(steps, tempStep)
 	}
@@ -630,10 +659,12 @@ func GetIngredients(db *sql.DB) ([]Ingredient, error) {
 
 	var ingredients []Ingredient
 
-	units, err := GetUnit(db)
+	units, err := GetUnits(db)
 	if err != nil {
 		return nil, err
 	}
+
+	sort.Stable(ByIDU(units)) // sort units slice stably
 
 	for rows.Next() {
 		var (
@@ -652,9 +683,21 @@ func GetIngredients(db *sql.DB) ([]Ingredient, error) {
 			return nil, err
 		}
 
+		// https://golang.org/pkg/sort/#Search
+		// first find index
+		idIdx := sort.Search(len(units), func(i int) bool { return units[i].ID >= unit })
+
+		// then perform sanity checks
+		var tempUnit Unit
+		if idIdx < len(units) && units[idIdx].ID == unit {
+			tempUnit = units[idIdx]
+		} else {
+			return nil, fmt.Errorf("ID: %d not found in units slice %v", unit, units)
+		}
+
 		debugLogger.Printf("Ingredient ID: %d, Ingredient Name: %s", id, name)
-		tempIngredient := Ingredient{Id: id, Name: name, QuantityUsed: quantity,
-			QuantityUsedUnits: units[unit], InventoryReference: inventory}
+		tempIngredient := Ingredient{ID: id, Name: name, QuantityUsed: quantity,
+			QuantityUnit: tempUnit, InventoryReference: inventory}
 		ingredients = append(ingredients, tempIngredient)
 	}
 
@@ -693,12 +736,13 @@ func GetConversions(db *sql.DB) ([]Conversion, error) {
 			return nil, err
 		}
 		debugLogger.Printf("ConversionID: %d", id)
-		tempConversion := Conversion{Id: id, FromUnit: fromUnit, ToUnit: toUnit,
+		tempConversion := Conversion{ID: id, FromUnit: fromUnit, ToUnit: toUnit,
 			Multiplicand: multiplicand, Denominator: denominator,
 			FromOffset: fromOffset, ToOffset: toOffset}
 
 		conversions = append(conversions, tempConversion)
 	}
+	return conversions, nil
 }
 
 // GetConversionsToUnit returns a slice of Conversion objects that
@@ -733,7 +777,7 @@ func GetConversionsToUnit(db *sql.DB, toUnit int) ([]Conversion, error) {
 			return nil, err
 		}
 		debugLogger.Printf("ConversionID: %d", id)
-		tempConversion := Conversion{Id: id, FromUnit: fromUnit, ToUnit: toUnit,
+		tempConversion := Conversion{ID: id, FromUnit: fromUnit, ToUnit: toUnit,
 			Multiplicand: multiplicand, Denominator: denominator,
 			FromOffset: fromOffset, ToOffset: toOffset}
 
@@ -774,7 +818,7 @@ func GetConversionsFromUnit(db *sql.DB, fromUnit int) ([]Conversion, error) {
 			return nil, err
 		}
 		debugLogger.Printf("ConversionID: %d", id)
-		tempConversion := Conversion{Id: id, FromUnit: fromUnit, ToUnit: toUnit,
+		tempConversion := Conversion{ID: id, FromUnit: fromUnit, ToUnit: toUnit,
 			Multiplicand: multiplicand, Denominator: denominator,
 			FromOffset: fromOffset, ToOffset: toOffset}
 		conversions = append(conversions, tempConversion)
@@ -798,10 +842,11 @@ func GetInventory(db *sql.DB) ([]InventoryItem, error) {
 
 	var inventory []InventoryItem
 
-	units, err := GetUnit(db)
+	units, err := GetUnits(db)
 	if err != nil {
 		return nil, err
 	}
+	sort.Stable(ByIDU(units)) // sort units slice stably
 
 	for rows.Next() {
 		var (
@@ -817,14 +862,27 @@ func GetInventory(db *sql.DB) ([]InventoryItem, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		// https://golang.org/pkg/sort/#Search
+		// first find index
+		idIdx := sort.Search(len(units), func(i int) bool { return units[i].ID >= unit })
+
+		// then perform sanity checks
+		var tempUnit Unit
+		if idIdx < len(units) && units[idIdx].ID == unit {
+			tempUnit = units[idIdx]
+		} else {
+			return nil, fmt.Errorf("ID: %d not found in units slice %v", unit, units)
+		}
+
 		debugLogger.Printf("Inventory Item ID: %d, Inventory Item Name: %s", id, name)
-		tempInventoryItem := InventoryItem{Id: id, EAN: ean, Name: name,
-			Description: description, Quantity: quantity, QuantityUnits: units[unit]}
+		tempInventoryItem := InventoryItem{ID: id, EAN: ean, Name: name,
+			Description: description, Quantity: quantity, QuantityUnit: tempUnit}
 		inventory = append(inventory, tempInventoryItem)
 
 	}
 
-	return ingredients, nil
+	return inventory, nil
 
 }
 
@@ -844,10 +902,11 @@ func GetInventoryForIngredient(db *sql.DB, ingredientID int) ([]InventoryItem, e
 
 	var inventory []InventoryItem
 
-	units, err := GetUnit(db)
+	units, err := GetUnits(db)
 	if err != nil {
 		return nil, err
 	}
+	sort.Stable(ByIDU(units)) // sort units slice stably
 
 	for rows.Next() {
 		var (
@@ -863,14 +922,27 @@ func GetInventoryForIngredient(db *sql.DB, ingredientID int) ([]InventoryItem, e
 		if err != nil {
 			return nil, err
 		}
+		// https://golang.org/pkg/sort/#Search
+		// first find index
+		idIdx := sort.Search(len(units), func(i int) bool { return units[i].ID >= unit })
+
+		// then perform sanity checks
+		var tempUnit Unit
+		if idIdx < len(units) && units[idIdx].ID == unit {
+			tempUnit = units[idIdx]
+		} else {
+			return nil, fmt.Errorf("ID: %d not found in units slice %v", unit, units)
+		}
+
 		debugLogger.Printf("Inventory ID: %d, Inventory Item Name: %s", id, name)
-		tempInventory := InventoryUnit{Id: id, EAN: ean, Name: name, Description: description,
-			Quantity: quantity, QuantityUnits: units[unit]}
+
+		tempInventory := InventoryItem{ID: id, EAN: ean, Name: name, Description: description,
+			Quantity: quantity, QuantityUnits: tempUnit}
 
 		inventory = append(inventory, tempInventory)
 	}
 
-	return ingredients, nil
+	return inventory, nil
 
 }
 
@@ -893,10 +965,13 @@ func GetUnits(db *sql.DB) ([]Unit, error) {
 		return nil, err
 	}
 
+	sort.Stable(ByIDUT(unitTypes))
 	ingredients, err := GetIngredients(db)
 	if err != nil {
 		return nil, err
 	}
+
+	sort.Stable(ByIDI(ingredients))
 
 	for rows.Next() {
 		var (
@@ -914,9 +989,33 @@ func GetUnits(db *sql.DB) ([]Unit, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		// https://golang.org/pkg/sort/#Search
+		// first find index
+		idIdx := sort.Search(len(ingredients), func(i int) bool { return ingredients[i].ID >= refIngredient })
+
+		// then perform sanity checks
+		var tempIngredient Ingredient
+		if idIdx < len(ingredients) && ingredients[idIdx].ID == refIngredient {
+			tempIngredient = ingredients[idIdx]
+		} else {
+			return nil, fmt.Errorf("ID: %d not found in ingredients slice %v", refIngredient, ingredients)
+		}
+
+		// now search unit types
+		idIdx = sort.Search(len(unitTypes), func(i int) bool { return unitTypes[i].ID >= unitType })
+
+		// then perform sanity checks
+		var tempType UnitType
+		if idIdx < len(unitTypes) && unitTypes[idIdx].ID == unitType {
+			tempType = unitTypes[idIdx]
+		} else {
+			return nil, fmt.Errorf("ID: %d not found in ingredients slice %v", unitType, unitTypes)
+		}
+
 		debugLogger.Printf("Unit ID: %d, Unit Name: %s", id, name)
-		tempUnit := Unit{Id: id, Name: name, Description: description,
-			RefIngredient: ingredients[refIngredient], UnitType: unitTypes[unitType]}
+		tempUnit := Unit{ID: id, Name: name, Description: description,
+			RefIngredient: tempIngredient, UnitType: tempType}
 		units = append(units, tempUnit)
 	}
 
@@ -951,7 +1050,7 @@ func GetUnitTypes(db *sql.DB) ([]UnitType, error) {
 			return nil, err
 		}
 		debugLogger.Printf("UnitType ID: %d, UnitType Name: %s", id, name)
-		tempUnitType := UnitType{Id: id, Name: name}
+		tempUnitType := UnitType{ID: id, Name: name}
 		unitTypes = append(unitTypes, tempUnitType)
 	}
 	return unitTypes, nil
@@ -987,7 +1086,7 @@ func GetTagsForRecipe(db *sql.DB, recipeID int) ([]Tag, error) {
 		}
 
 		debugLogger.Printf("Tag ID: %d, Tag: %s", id, name)
-		tempTag := Tag{Id: id, Name: name, Description: description}
+		tempTag := Tag{ID: id, Name: name, Description: description}
 		tags = append(tags, tempTag)
 
 	}
@@ -1002,7 +1101,7 @@ func GetTags(db *sql.DB) ([]Tag, error) {
 	sqlString := "SELECT * FROM tags"
 
 	debugLogger.Println(sqlString)
-	rows, err := db.Query(sqlString, recipeID)
+	rows, err := db.Query(sqlString)
 	if err != nil {
 		return nil, err
 	}
@@ -1023,7 +1122,7 @@ func GetTags(db *sql.DB) ([]Tag, error) {
 		}
 
 		debugLogger.Printf("Tag ID: %d, Tag: %s", id, name)
-		tempTag := Tag{Id: id, Name: name, Description: description}
+		tempTag := Tag{ID: id, Name: name, Description: description}
 		tags = append(tags, tempTag)
 	}
 
