@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"sort"
 	"strconv"
 
 	"github.com/gdamore/tcell"
@@ -91,7 +92,7 @@ func startCUI(db *sql.DB) error {
 	if err != nil {
 		return err
 	}
-	recipePreview, err = initRecipePreview()
+	recipePreview, err = initRecipePreview(db, -1)
 	if err != nil {
 		return err
 	}
@@ -207,12 +208,16 @@ func initRecipeList(db *sql.DB) (*tview.List, error) {
 	// always highlight selected list item
 	recipeList.SetSelectedFocusOnly(false)
 
+	// recipes is a map of recipes indexed by database ID
 	recipes, err := GetRecipes(db)
+	if err != nil {
+		return nil, err
+	}
 
-	//TODO: need to sort recipe names
+	sort.Stable(ByNameR(recipes))
 
-	for id, recipe := range recipes {
-		recipeList.AddItem(recipe, strconv.Itoa(id), 0, nil)
+	for _, recipe := range recipes {
+		recipeList.AddItem(recipe.Name, strconv.Itoa(recipe.ID), 0, nil)
 
 	}
 
@@ -230,17 +235,16 @@ func initTagList(db *sql.DB) (*tview.List, error) {
 
 	tagNames, err := GetTags(db)
 
-	//TODO: need to sort tags
+	sort.Stable(ByNameT(tagNames))
+	for _, tag := range tagNames {
 
-	for id, tag := range tagNames {
-
-		tagList.AddItem(tag, srconv.Itoa(id), 0, nil)
+		tagList.AddItem(tag.Name, strconv.Itoa(tag.ID), 0, nil)
 	}
 
 	return tagList, err
 }
 
-func initRecipePreview(recipeID int, db *sql.DB) (*tview.TextView, error) {
+func initRecipePreview(db *sql.DB, recipeID int) (*tview.TextView, error) {
 
 	recipePreview := tview.NewTextView()
 	recipePreview.SetDynamicColors(true).SetRegions(false)
