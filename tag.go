@@ -17,15 +17,15 @@ func (t Tag) String() string {
 // https://golang.org/pkg/sort/#pkg-overview
 type ByNameT []Tag
 
-func (n ByNameT) Len() int           { return len(n) }
-func (n ByNameT) Swap(i, j int)      { n[i], n[j] = n[j], n[i] }
-func (n ByNameT) Less(i, j int) bool { return n[i].Name < n[j] }
+func (t ByNameT) Len() int           { return len(t) }
+func (t ByNameT) Swap(i, j int)      { t[i], t[j] = t[j], t[i] }
+func (t ByNameT) Less(i, j int) bool { return t[i].Name < t[j].Name }
 
 // ByID implements sort.Interface for []Tag
 // based on the ID field
 // https://golang.org/pkg/sort/#pkg-overview
 type ByIDT []Tag
 
-func (d ByIDT) Len() int           { return len(d) }
-func (d ByIDT) Swap(i, j int)      { d[i], d[j] = d[j], d[i] }
-func (d ByIDT) Less(i, j int) bool { return d[i].ID < d[j].ID }
+func (t ByIDT) Len() int           { return len(t) }
+func (t ByIDT) Swap(i, j int)      { t[i], t[j] = t[j], t[i] }
+func (t ByIDT) Less(i, j int) bool { return t[i].ID < t[j].ID }

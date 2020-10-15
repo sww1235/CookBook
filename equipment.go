@@ -28,7 +28,7 @@ type ByNameE []Equipment
 
 func (n ByNameE) Len() int           { return len(n) }
 func (n ByNameE) Swap(i, j int)      { n[i], n[j] = n[j], n[i] }
-func (n ByNameE) Less(i, j int) bool { return n[i].Name < n[j] }
+func (n ByNameE) Less(i, j int) bool { return n[i].Name < n[j].Name }
 
 // ByID implements sort.Interface for []Equipment
 // based on the ID field

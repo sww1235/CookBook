@@ -83,7 +83,7 @@ type ByNameR []Recipe
 
 func (n ByNameR) Len() int           { return len(n) }
 func (n ByNameR) Swap(i, j int)      { n[i], n[j] = n[j], n[i] }
-func (n ByNameR) Less(i, j int) bool { return n[i].Name < n[j] }
+func (n ByNameR) Less(i, j int) bool { return n[i].Name < n[j].Name }
 
 // ByID implements sort.Interface for []Recipe
 // based on the ID field

@@ -25,7 +25,7 @@ type ByNameIv []InventoryItem
 
 func (n ByNameIv) Len() int           { return len(n) }
 func (n ByNameIv) Swap(i, j int)      { n[i], n[j] = n[j], n[i] }
-func (n ByNameIv) Less(i, j int) bool { return n[i].Name < n[j] }
+func (n ByNameIv) Less(i, j int) bool { return n[i].Name < n[j].Name }
 
 // ByID implements sort.Interface for []Inventory
 // based on the ID field

@@ -30,7 +30,7 @@ type ByNameIn []Ingredient
 
 func (n ByNameIn) Len() int           { return len(n) }
 func (n ByNameIn) Swap(i, j int)      { n[i], n[j] = n[j], n[i] }
-func (n ByNameIn) Less(i, j int) bool { return n[i].Name < n[j] }
+func (n ByNameIn) Less(i, j int) bool { return n[i].Name < n[j].Name }
 
 // ByID implements sort.Interface for []Ingredient
 // based on the ID field
