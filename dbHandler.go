@@ -406,7 +406,8 @@ func UpdateStep(db *sql.DB, stp Step) (int, error) {
 // GetRecipes returns a slice of all recipes in database
 func GetRecipes(db *sql.DB) ([]Recipe, error) {
 
-	sqlString := "SELECT * FROM recipes"
+	sqlString := "SELECT id, name, description, comments, source, author, quantity, " +
+		"quantityMadeUnits, initialVersion, version FROM recipes"
 
 	debugLogger.Println(sqlString)
 	rows, err := db.Query(sqlString)
@@ -487,7 +488,7 @@ func GetRecipes(db *sql.DB) ([]Recipe, error) {
 // the database table index for the specified recipe
 func GetEquipmentForRecipe(db *sql.DB, recipeID int) ([]Equipment, error) {
 
-	sqlString := "SELECT * FROM equipment AS equip INNER JOIN equipment_recipe AS er" +
+	sqlString := "SELECT id, name, isOwned FROM equipment AS equip INNER JOIN equipment_recipe AS er" +
 		"ON equip.id = er.equipmentID WHERE er.recipeID = ?"
 
 	debugLogger.Println(sqlString)
@@ -523,8 +524,8 @@ func GetEquipmentForRecipe(db *sql.DB, recipeID int) ([]Equipment, error) {
 // the database table index for the specified recipe
 func GetIngredientsForRecipe(db *sql.DB, recipeID int) ([]Ingredient, error) {
 
-	sqlString := "SELECT * FROM ingredients AS ing INNER JOIN ingredient_recipe AS ir" +
-		"ON ing.id = ir.ingredientID WHERE ir.recipeID = ?"
+	sqlString := "SELECT id, name, quantity, quantityUnits FROM ingredients AS ing " +
+		"INNER JOIN ingredient_recipe AS ir ON ing.id = ir.ingredientID WHERE ir.recipeID = ?"
 
 	debugLogger.Println(sqlString)
 	rows, err := db.Query(sqlString, recipeID)
@@ -650,7 +651,7 @@ func GetStepsForRecipe(db *sql.DB, recipeID int) ([]Step, error) {
 // GetIngredients returns a slice of all ingredients in the databse
 func GetIngredients(db *sql.DB) ([]Ingredient, error) {
 
-	sqlString := "SELECT * FROM ingredients"
+	sqlString := "SELECT id, name, quantity, quantityUnits FROM ingredients"
 
 	debugLogger.Println(sqlString)
 	rows, err := db.Query(sqlString)
@@ -710,7 +711,8 @@ func GetIngredients(db *sql.DB) ([]Ingredient, error) {
 // in the database
 func GetConversions(db *sql.DB) ([]Conversion, error) {
 
-	sqlString := "SELECT * FROM unitConversions"
+	sqlString := "SELECT id, fromUnit, toUnit, multiplicand, denominator, fromOffset, toOffset " +
+		"FROM unitConversions WHERE fromUnit = ?"
 
 	debugLogger.Println(sqlString)
 	rows, err := db.Query(sqlString)
@@ -751,7 +753,8 @@ func GetConversions(db *sql.DB) ([]Conversion, error) {
 // are converting to toUnit
 func GetConversionsToUnit(db *sql.DB, toUnit int) ([]Conversion, error) {
 
-	sqlString := "SELECT * FROM unitConversions WHERE toUnit = ?"
+	sqlString := "SELECT id, fromUnit, toUnit, multiplicand, denominator, fromOffset, toOffset " +
+		"FROM unitConversions WHERE fromUnit = ?"
 
 	debugLogger.Println(sqlString)
 	rows, err := db.Query(sqlString, toUnit)
@@ -792,7 +795,8 @@ func GetConversionsToUnit(db *sql.DB, toUnit int) ([]Conversion, error) {
 // are converting from: fromUnit
 func GetConversionsFromUnit(db *sql.DB, fromUnit int) ([]Conversion, error) {
 
-	sqlString := "SELECT * FROM unitConversions WHERE fromUnit = ?"
+	sqlString := "SELECT id, fromUnit, toUnit, multiplicand, denominator, fromOffset, toOffset " +
+		"FROM unitConversions WHERE fromUnit = ?"
 
 	debugLogger.Println(sqlString)
 	rows, err := db.Query(sqlString, fromUnit)
@@ -833,7 +837,7 @@ func GetConversionsFromUnit(db *sql.DB, fromUnit int) ([]Conversion, error) {
 //This is used for getting all items in inventory
 func GetInventory(db *sql.DB) ([]InventoryItem, error) {
 
-	sqlString := "SELECT * FROM inventory"
+	sqlString := "SELECT id, ean, name, description, quantity, quantityUnit FROM inventory"
 
 	debugLogger.Println(sqlString)
 	rows, err := db.Query(sqlString)
@@ -892,8 +896,8 @@ func GetInventory(db *sql.DB) ([]InventoryItem, error) {
 // the specified ingredientID
 func GetInventoryForIngredient(db *sql.DB, ingredientID int) ([]InventoryItem, error) {
 
-	sqlString := "SELECT * FROM inventory AS inv INNER JOIN ingredient_inventory AS ii " +
-		"ON inv.id = ii.inventoryID WHERE ii.ingredientID = ?"
+	sqlString := "SELECT id, ean, name, description, quantity, quantityUnit FROM inventory AS inv " +
+		"INNER JOIN ingredient_inventory AS ii ON inv.id = ii.inventoryID WHERE ii.ingredientID = ?"
 
 	debugLogger.Println(sqlString)
 	rows, err := db.Query(sqlString, ingredientID)
@@ -951,7 +955,7 @@ func GetInventoryForIngredient(db *sql.DB, ingredientID int) ([]InventoryItem, e
 // GetUnits returns a slice of all units  defined in the database
 func GetUnits(db *sql.DB) ([]Unit, error) {
 
-	sqlString := "SELECT * FROM units"
+	sqlString := "SELECT id, name, description, symbol, isCustom, refIngredient, unitType FROM units"
 
 	debugLogger.Println(sqlString)
 	rows, err := db.Query(sqlString)
@@ -1030,7 +1034,7 @@ func GetUnits(db *sql.DB) ([]Unit, error) {
 //Note: this table is essentially static
 func GetUnitTypes(db *sql.DB) ([]UnitType, error) {
 
-	sqlString := "SELECT * FROM unitType"
+	sqlString := "SELECT id, name FROM unitType"
 
 	debugLogger.Println(sqlString)
 	rows, err := db.Query(sqlString)
@@ -1063,7 +1067,7 @@ func GetUnitTypes(db *sql.DB) ([]UnitType, error) {
 // with the passed in recipe ID
 func GetTagsForRecipe(db *sql.DB, recipeID int) ([]Tag, error) {
 
-	sqlString := "SELECT * FROM tags INNER JOIN tag_recipe AS tr" +
+	sqlString := "SELECT id, name, description FROM tags INNER JOIN tag_recipe AS tr" +
 		"ON tags.id = tr.tagID WHERE tr.recipeID = ?"
 
 	debugLogger.Println(sqlString)
@@ -1100,7 +1104,7 @@ func GetTagsForRecipe(db *sql.DB, recipeID int) ([]Tag, error) {
 //
 // Used to populate a list of tags. Not for getting all attributes of tags
 func GetTags(db *sql.DB) ([]Tag, error) {
-	sqlString := "SELECT * FROM tags"
+	sqlString := "SELECT id, name, description FROM tags"
 
 	debugLogger.Println(sqlString)
 	rows, err := db.Query(sqlString)
