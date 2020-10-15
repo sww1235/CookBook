@@ -271,7 +271,7 @@ func UpdateRecipe(db *sql.DB, r Recipe) (int, error) {
 // When using this function, the Ingredient struct should have all fields filled out.
 //
 // Returns id of inserted ingredient in database, and any associated errors
-func InsertIngredient(db *sql.DB, ing Ingredient, r Recipe, invUnitID int) (int, error) {
+func InsertIngredient(db *sql.DB, ing Ingredient, r Recipe, invRef []InventoryItem) (int, error) {
 
 	insertSQL := "INSERT INTO ingredients (name, quantity, quantityUnits) " +
 		"VALUES(?, ?, ?)"
@@ -284,13 +284,14 @@ func InsertIngredient(db *sql.DB, ing Ingredient, r Recipe, invUnitID int) (int,
 	if ing.ID != -1 {
 		return -1, fmt.Errorf("Ingredient %s already exists in database", ing)
 	}
-
+	// result allows us to retrieve ingredient id
 	result, err := db.Exec(insertSQL, ing.Name, ing.QuantityUsed, ing.QuantityUnit.ID)
 
 	if err != nil {
 		return -1, err
 	}
 
+	//newly created ingredientID
 	ingredientID, err := result.LastInsertId()
 
 	if err != nil {
@@ -303,10 +304,14 @@ func InsertIngredient(db *sql.DB, ing Ingredient, r Recipe, invUnitID int) (int,
 		return -1, err
 	}
 
-	_, err = db.Exec(mapInvSQL, ingredientID, invUnitID)
+	// need to insert all inventory references into mapping table
+	for _, item := range invRef {
 
-	if err != nil {
-		return -1, err
+		_, err = db.Exec(mapInvSQL, ingredientID, item.ID)
+
+		if err != nil {
+			return -1, err
+		}
 	}
 
 	return int(ingredientID), err
@@ -943,7 +948,7 @@ func GetInventoryForIngredient(db *sql.DB, ingredientID int) ([]InventoryItem, e
 		debugLogger.Printf("Inventory ID: %d, Inventory Item Name: %s", id, name)
 
 		tempInventory := InventoryItem{ID: id, EAN: ean, Name: name, Description: description,
-			Quantity: quantity, QuantityUnits: tempUnit}
+			Quantity: quantity, QuantityUnit: tempUnit}
 
 		inventory = append(inventory, tempInventory)
 	}
@@ -977,7 +982,7 @@ func GetUnits(db *sql.DB) ([]Unit, error) {
 		return nil, err
 	}
 
-	sort.Stable(ByIDI(ingredients))
+	sort.Stable(ByIDIn(ingredients))
 
 	for rows.Next() {
 		var (
