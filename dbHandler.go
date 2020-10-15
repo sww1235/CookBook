@@ -411,7 +411,7 @@ func UpdateStep(db *sql.DB, stp Step) (int, error) {
 func GetRecipes(db *sql.DB) ([]Recipe, error) {
 
 	sqlString := "SELECT id, name, description, comments, source, author, quantity, " +
-		"quantityMadeUnits, initialVersion, version FROM recipes"
+		"quantityUnits, initialVersion, version FROM recipes"
 
 	debugLogger.Println(sqlString)
 	rows, err := db.Query(sqlString)

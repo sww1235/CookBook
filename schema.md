@@ -17,7 +17,7 @@ store information about a specific recipe. Multiple versions of a recipe are all
 | Source            | text             | TEXT              | source of recipe, include URL or other info            |
 | Author            | text             | TEXT              | name of original creator of specific recipe (if known) |
 | Quantity          | decimal(7,2)     | NUM               | a specific quantity that this recipe makes.            |
-| QuantityMadeUnits | int (fk)         | INTEGER (fk)      | unit of measure for QuantityMade                       |
+| QuantityUnits     | int (fk)         | INTEGER (fk)      | unit of measure for QuantityMade                       |
 | initialVersion    | int (fk)         | INTEGER (fk)      | id of initial version of recipe. null if no revs       |
 | version           | int              | INTEGER           | revision number of recipe                              |
 
