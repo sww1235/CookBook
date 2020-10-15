@@ -145,7 +145,7 @@ func initDB(databasePath string) (*sql.DB, error) {
 			"FOREIGN KEY(recipeID) REFERENCES recipes(id), " +
 			"PRIMARY KEY(ingredientID, recipeID))"
 
-		createQueries["steps"] = "CREATE TABLE steps( id INTEGER NOT NULL PRIMARY KEY, " +
+		createQueries["steps"] = "CREATE TABLE steps( id INTEGER NOT NULL PRIMARY KEY, order INTEGER " +
 			"instructions TEXT, time NUM, stepType INTEGER, temperature NUM, tempUnit INTEGER, " +
 			"FOREIGN KEY(stepTypeID) REFERENCES stepType(id), " +
 			"FOREIGN KEY(tempUnits) REFERENCES units(id))"
@@ -345,8 +345,8 @@ func UpdateIngredient(db *sql.DB, ing Ingredient, invUnitID int) (int, error) {
 // Returns id of inserted step in database, and any associated errors.
 func InsertStep(db *sql.DB, stp Step, r Recipe) (int, error) {
 
-	insertSQL := "INSERT INTO steps (instructions, time, stepType, temperature, tempUnit) " +
-		"VALUES(?, ?, ?, ?, ?)"
+	insertSQL := "INSERT INTO steps (order, instructions, time, stepType, temperature, tempUnit) " +
+		"VALUES(?, ?, ?, ?, ?, ?)"
 
 	mapSQL := "INSERT INTO step_recipe (recipeID, stepID) VALUES (?, ?)"
 
@@ -355,7 +355,7 @@ func InsertStep(db *sql.DB, stp Step, r Recipe) (int, error) {
 		return -1, fmt.Errorf("Step %s already exists in database", stp)
 	}
 
-	result, err := db.Exec(insertSQL, stp.Instructions, stp.TimeNeeded, stp.StepType,
+	result, err := db.Exec(insertSQL, stp.Order, stp.Instructions, stp.TimeNeeded, stp.StepType,
 		stp.Temperature.Value, stp.Temperature.Unit.ID)
 
 	if err != nil {
@@ -386,7 +386,7 @@ func InsertStep(db *sql.DB, stp Step, r Recipe) (int, error) {
 // Returns id of inserted step in database, and any associated errors.
 func UpdateStep(db *sql.DB, stp Step) (int, error) {
 
-	updateSQL := "UPDATE steps SET instructions = ?, time = ?, stepType = ? " +
+	updateSQL := "UPDATE steps SET order = ?, instructions = ?, time = ?, stepType = ? " +
 		"temperature = ?, tempUnit = ? WHERE id = ?"
 
 	// if ingredient doesn't exist in database
@@ -395,7 +395,7 @@ func UpdateStep(db *sql.DB, stp Step) (int, error) {
 
 	}
 
-	_, err := db.Exec(updateSQL, stp.Instructions, stp.TimeNeeded, stp.StepType,
+	_, err := db.Exec(updateSQL, stp.Order, stp.Instructions, stp.TimeNeeded, stp.StepType,
 		stp.Temperature.Value, stp.Temperature.Unit.ID, stp.ID)
 
 	//TODO: need to delete and remap ingredient_inventory
@@ -583,7 +583,8 @@ func GetIngredientsForRecipe(db *sql.DB, recipeID int) ([]Ingredient, error) {
 // for the specified recipe
 func GetStepsForRecipe(db *sql.DB, recipeID int) ([]Step, error) {
 
-	sqlString := "SELECT * FROM steps INNER JOIN step_recipe AS is" +
+	sqlString := "SELECT id, order, instructions, time, stepType, temperature, tempUnit " +
+		"FROM steps INNER JOIN step_recipe AS isi " +
 		"ON steps.id = is.stepID WHERE ir.recipeID = ?"
 
 	debugLogger.Println(sqlString)
@@ -605,6 +606,7 @@ func GetStepsForRecipe(db *sql.DB, recipeID int) ([]Step, error) {
 	for rows.Next() {
 		var (
 			id           int
+			order        int
 			instructions string
 			timeNeeded   int //seconds
 			stepType     int //fk to stepType iota
@@ -612,7 +614,7 @@ func GetStepsForRecipe(db *sql.DB, recipeID int) ([]Step, error) {
 			tempUnit     int //fk
 		)
 
-		err = rows.Scan(&id, &instructions, &timeNeeded, &stepType,
+		err = rows.Scan(&id, &order, &instructions, &timeNeeded, &stepType,
 			&temperature, &tempUnit)
 		if err != nil {
 			return nil, err
@@ -637,7 +639,7 @@ func GetStepsForRecipe(db *sql.DB, recipeID int) ([]Step, error) {
 		temp := Temperature{Value: temperature, Unit: temperatureUnit}
 
 		debugLogger.Printf("Step ID: %d", id)
-		tempStep := Step{ID: id, TimeNeeded: duration, StepType: StepType(stepType),
+		tempStep := Step{ID: id, Order: order, TimeNeeded: duration, StepType: StepType(stepType),
 			Temperature: temp}
 		steps = append(steps, tempStep)
 	}

@@ -31,11 +31,12 @@ type Step struct {
 	StepType     StepType
 	Temperature  Temperature
 	Instructions string
+	Order        int // order of step in recipe
 }
 
 func (s Step) String() string {
 	stringString := ""
-	stringString += fmt.Sprintf("%s: Needs %d\nCook at %s\n", s.StepType, s.TimeNeeded, s.Temperature.String())
+	stringString += fmt.Sprintf("%s Step %d: Needs %d\nCook at %s\n", s.StepType, s.Order, s.TimeNeeded, s.Temperature.String())
 	stringString += s.Instructions + "\n"
 
 	return stringString
@@ -51,17 +52,17 @@ func (st StepType) String() string {
 // ByName implements sort.Interface for []Step
 // based on the Name field
 // https://golang.org/pkg/sort/#pkg-overview
-type ByNameS []Step
+type ByOrderS []Step
 
-func (n ByNameS) Len() int           { return len(n) }
-func (n ByNameS) Swap(i, j int)      { n[i], n[j] = n[j], n[i] }
-func (n ByNameS) Less(i, j int) bool { return n[i].Name < n[j] }
+func (s ByOrderS) Len() int           { return len(s) }
+func (s ByOrderS) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+func (s ByOrderS) Less(i, j int) bool { return s[i].Order < s[j].Order }
 
 // ByID implements sort.Interface for []Step
 // based on the ID field
 // https://golang.org/pkg/sort/#pkg-overview
 type ByIDS []Step
 
-func (d ByIDS) Len() int           { return len(d) }
-func (d ByIDS) Swap(i, j int)      { d[i], d[j] = d[j], d[i] }
-func (d ByIDS) Less(i, j int) bool { return d[i].ID < d[j].ID }
+func (s ByIDS) Len() int           { return len(s) }
+func (s ByIDS) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+func (s ByIDS) Less(i, j int) bool { return s[i].ID < s[j].ID }

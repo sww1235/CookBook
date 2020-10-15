@@ -62,7 +62,8 @@ Probably done using encoding in the step instructions field of the IngredientID
 
 | Column Name  | Datatype (mysql) | Datatype (sqlite) | Description                                        |
 | ------------ | ---------------- | ----------------- | -------------------------------------------------- |
-| ID           | integer (pk)     | INTEGER (pk)      | unique ID for step                                 |
+| ID           | int (pk)         | INTEGER (pk)      | unique ID for step                                 |
+| Order        | int              | INTEGER           | order of step in recipe                            |
 | Instructions | text             | TEXT              | instructions for step                              |
 | Time         | decimal(7,2)     | NUM               | stores time of step in seconds.                    |
 | StepType     | int (fk)         | INTEGER (fk)      | mapping to either stepType table in database, or stepType iota in code |
