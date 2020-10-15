@@ -120,7 +120,6 @@ stores all units with a standardized PK and a human readable description
 | Description   | text             | TEXT              | description of unit                           |
 | Symbol        | text             | TEXT              | unit symbol                                   |
 | isCustom      | bool             | INTEGER           | is unit custom or standard                    |
-| refIngredient | int (fk)         | INGEGER (fk)      | fk of ingredient for ingredient specific unit |
 | unitType      | int (fk)         | INTEGER (fk)      | base type of unit                             |
 
 

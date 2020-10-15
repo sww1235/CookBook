@@ -3,13 +3,12 @@ package main
 import "fmt"
 
 type Unit struct {
-	ID            int        // id of unit in database
-	Name          string     // human readable name of unit
-	Symbol        string     // recipe symbol
-	Description   string     // unit description
-	IsCustom      bool       // is unit custom or standard
-	RefIngredient Ingredient //Referenced ingredient for ingredient specific unit
-	UnitType      UnitType   // type of unit
+	ID          int      // id of unit in database
+	Name        string   // human readable name of unit
+	Symbol      string   // recipe symbol
+	Description string   // unit description
+	IsCustom    bool     // is unit custom or standard
+	UnitType    UnitType // type of unit
 
 }
 

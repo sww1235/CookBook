@@ -116,7 +116,6 @@ func initDB(databasePath string) (*sql.DB, error) {
 		createQueries["units"] = "CREATE TABLE units(id INTEGER NOT NULL PRIMARY KEY, " +
 			"name TEXT, description TEXT, symbol TEXT, isCustom INTEGER, " +
 			"refIngredient INTEGER, unitType INTEGER, " +
-			"FOREIGN KEY (refIngredient) REFERENCES ingredients(id), " +
 			"FOREIGN KEY (unitType) REFERENCES unitType(id))"
 
 		createQueries["recipes"] = "CREATE TABLE recipes (id INTEGER NOT NULL PRIMARY KEY, " +
@@ -960,7 +959,7 @@ func GetInventoryForIngredient(db *sql.DB, ingredientID int) ([]InventoryItem, e
 // GetUnits returns a slice of all units  defined in the database
 func GetUnits(db *sql.DB) ([]Unit, error) {
 
-	sqlString := "SELECT id, name, description, symbol, isCustom, refIngredient, unitType FROM units"
+	sqlString := "SELECT id, name, description, symbol, isCustom, unitType FROM units"
 
 	debugLogger.Println(sqlString)
 	rows, err := db.Query(sqlString)
@@ -977,56 +976,35 @@ func GetUnits(db *sql.DB) ([]Unit, error) {
 	}
 
 	sort.Stable(ByIDUT(unitTypes))
-	ingredients, err := GetIngredients(db)
-	if err != nil {
-		return nil, err
-	}
-
-	sort.Stable(ByIDIn(ingredients))
 
 	for rows.Next() {
 		var (
-			id            int
-			name          string
-			description   string
-			symbol        string
-			isCustom      bool
-			refIngredient int //fk
-			unitType      int //fk
+			id          int
+			name        string
+			description string
+			symbol      string
+			isCustom    bool
+			unitType    int //fk
 		)
 
-		err = rows.Scan(&id, &name, &description, &symbol, &isCustom, &refIngredient,
-			&unitType)
+		err = rows.Scan(&id, &name, &description, &symbol, &isCustom, &unitType)
 		if err != nil {
 			return nil, err
 		}
 
-		// https://golang.org/pkg/sort/#Search
-		// first find index
-		idIdx := sort.Search(len(ingredients), func(i int) bool { return ingredients[i].ID >= refIngredient })
-
-		// then perform sanity checks
-		var tempIngredient Ingredient
-		if idIdx < len(ingredients) && ingredients[idIdx].ID == refIngredient {
-			tempIngredient = ingredients[idIdx]
-		} else {
-			return nil, fmt.Errorf("ID: %d not found in ingredients slice %v", refIngredient, ingredients)
-		}
-
 		// now search unit types
-		idIdx = sort.Search(len(unitTypes), func(i int) bool { return unitTypes[i].ID >= unitType })
+		idIdx := sort.Search(len(unitTypes), func(i int) bool { return unitTypes[i].ID >= unitType })
 
 		// then perform sanity checks
 		var tempType UnitType
 		if idIdx < len(unitTypes) && unitTypes[idIdx].ID == unitType {
 			tempType = unitTypes[idIdx]
 		} else {
-			return nil, fmt.Errorf("ID: %d not found in ingredients slice %v", unitType, unitTypes)
+			return nil, fmt.Errorf("ID: %d not found in units slice %v", unitType, unitTypes)
 		}
 
 		debugLogger.Printf("Unit ID: %d, Unit Name: %s", id, name)
-		tempUnit := Unit{ID: id, Name: name, Description: description,
-			RefIngredient: tempIngredient, UnitType: tempType}
+		tempUnit := Unit{ID: id, Name: name, Description: description, UnitType: tempType}
 		units = append(units, tempUnit)
 	}
 
